@@ -1,0 +1,22 @@
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    clean-disabled: true
+
+logging:
+  level:
+    root: WARN
+    com.thegamersstation.marketplace: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+otp:
+  provider: simulated
+messaging:
+  ably:
+    enabled: true

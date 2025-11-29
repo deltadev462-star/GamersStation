@@ -1,0 +1,210 @@
+package com.thegamersstation.marketplace.otp;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.messagebird.MessageBirdClient;
+import com.messagebird.MessageBirdService;
+import com.messagebird.MessageBirdServiceImpl;
+import com.messagebird.exceptions.GeneralException;
+import com.messagebird.exceptions.UnauthorizedException;
+import com.messagebird.objects.Verify;
+import com.messagebird.objects.VerifyRequest;
+import com.thegamersstation.marketplace.common.exception.BusinessRuleException;
+import com.thegamersstation.marketplace.common.exception.RateLimitExceededException;
+import com.thegamersstation.marketplace.common.validation.PhoneValidator;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
+@Service
+@ConditionalOnProperty(name = "otp.provider", havingValue = "messagebird")
+public class MessageBirdOtpService implements OtpService {
+
+    private final OtpLogRepository otpLogRepository;
+    private final MessageBirdClient messageBirdClient;
+
+    @Value("${otp.ttl-minutes}")
+    private int ttlMinutes;
+
+    @Value("${otp.resend-cooldown-seconds}")
+    private int resendCooldownSeconds;
+
+    @Value("${otp.max-attempts-per-day}")
+    private int maxAttemptsPerDay;
+
+    @Value("${rate-limit.otp.per-phone}")
+    private int perPhoneRateLimit;
+
+    @Value("${rate-limit.otp.per-ip}")
+    private int perIpRateLimit;
+
+    @Value("${messagebird.originator:GamerStation}")
+    private String originator;
+
+    // Cache to store MessageBird verification IDs
+    private final Cache<String, String> verificationIdCache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .maximumSize(10_000)
+            .build();
+
+    public MessageBirdOtpService(
+            OtpLogRepository otpLogRepository,
+            @Value("${messagebird.api-key}") String apiKey
+    ) {
+        this.otpLogRepository = otpLogRepository;
+        MessageBirdService messageBirdService = new MessageBirdServiceImpl(apiKey);
+        this.messageBirdClient = new MessageBirdClient(messageBirdService);
+    }
+
+    @Override
+    public void sendOtp(String phoneNumber, String ipAddress) {
+        log.info("Sending MessageBird OTP to phone: {}", phoneNumber);
+
+        // Validate phone format
+        if (!PhoneValidator.isValid(phoneNumber)) {
+            throw new BusinessRuleException("Invalid phone number format");
+        }
+
+        // Validate rate limits and business rules
+        validateOtpRequest(phoneNumber, ipAddress);
+
+        try {
+            // Create verification request
+            VerifyRequest verifyRequest = new VerifyRequest(phoneNumber);
+            verifyRequest.setOriginator(originator);
+            verifyRequest.setTimeout(ttlMinutes * 60); // Convert to seconds
+            verifyRequest.setType("sms");
+            verifyRequest.setTemplate("Your verification code is %token");
+
+            // Send verification through MessageBird
+            Verify verify = messageBirdClient.sendVerifyToken(verifyRequest);
+
+            // Store verification ID for later verification
+            verificationIdCache.put(phoneNumber, verify.getId());
+
+            // Log the attempt
+            OtpLog otpLog = OtpLog.builder()
+                    .phoneNumber(phoneNumber)
+                    .ipAddress(ipAddress)
+                    .success(true)
+                    .attemptedAt(Instant.now())
+                    .build();
+            otpLogRepository.save(otpLog);
+
+            log.info("✅ OTP sent successfully via MessageBird to phone: {}", phoneNumber);
+
+        } catch (UnauthorizedException e) {
+            log.error("MessageBird authentication failed", e);
+            throw new BusinessRuleException("OTP service authentication failed. Please contact support.");
+        } catch (GeneralException e) {
+            log.error("MessageBird API error", e);
+            throw new BusinessRuleException("Failed to send OTP. Please try again later.");
+        } catch (Exception e) {
+            log.error("Unexpected error sending OTP", e);
+            throw new BusinessRuleException("Failed to send OTP. Please try again later.");
+        }
+    }
+
+    @Override
+    public boolean verifyOtp(String phoneNumber, String code) {
+        log.info("Verifying OTP for phone: {}", phoneNumber);
+
+        if (code == null || code.isBlank()) {
+            return false;
+        }
+
+        String verificationId = verificationIdCache.getIfPresent(phoneNumber);
+
+        if (verificationId == null) {
+            log.warn("No verification ID found for phone: {} (expired or not sent)", phoneNumber);
+            return false;
+        }
+
+        try {
+            // Verify the token with MessageBird
+            Verify verify = messageBirdClient.verifyToken(verificationId, code.trim());
+
+            boolean isValid = "verified".equalsIgnoreCase(verify.getStatus());
+
+            if (isValid) {
+                // Remove verification ID from cache after successful verification
+                verificationIdCache.invalidate(phoneNumber);
+                log.info("✅ OTP verified successfully via MessageBird for phone: {}", phoneNumber);
+            } else {
+                log.warn("❌ Invalid OTP code for phone: {} (status: {})", phoneNumber, verify.getStatus());
+            }
+
+            return isValid;
+
+        } catch (UnauthorizedException e) {
+            log.error("MessageBird authentication failed during verification", e);
+            return false;
+        } catch (GeneralException e) {
+            log.error("MessageBird verification error: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.error("Unexpected error verifying OTP", e);
+            return false;
+        }
+    }
+
+    @Override
+    public void validateOtpRequest(String phoneNumber, String ipAddress) {
+        Instant now = Instant.now();
+
+        // Check daily limit
+        Instant oneDayAgo = now.minus(Duration.ofDays(1));
+        long attemptsToday = otpLogRepository.countByPhoneNumberAndAttemptedAtAfter(
+                phoneNumber, oneDayAgo
+        );
+
+        if (attemptsToday >= maxAttemptsPerDay) {
+            throw new BusinessRuleException(
+                    String.format("Maximum OTP attempts (%d) reached for today. Please try again tomorrow.",
+                            maxAttemptsPerDay)
+            );
+        }
+
+        // Check resend cooldown
+        OtpLog lastAttempt = otpLogRepository.findLastAttempt(phoneNumber);
+        if (lastAttempt != null) {
+            long secondsSinceLastAttempt = Duration.between(lastAttempt.getAttemptedAt(), now).getSeconds();
+            if (secondsSinceLastAttempt < resendCooldownSeconds) {
+                long retryAfter = resendCooldownSeconds - secondsSinceLastAttempt;
+                throw new RateLimitExceededException(
+                        String.format("Please wait %d seconds before requesting another OTP", retryAfter),
+                        retryAfter
+                );
+            }
+        }
+
+        // Check per-phone rate limit (per minute)
+        Instant oneMinuteAgo = now.minus(Duration.ofMinutes(1));
+        long attemptsLastMinute = otpLogRepository.countByPhoneNumberAndAttemptedAtAfter(
+                phoneNumber, oneMinuteAgo
+        );
+
+        if (attemptsLastMinute >= perPhoneRateLimit) {
+            throw new RateLimitExceededException(
+                    "Too many OTP requests. Please try again in 1 minute.", 60L
+            );
+        }
+
+        // Check per-IP rate limit (per minute)
+        long ipAttemptsLastMinute = otpLogRepository.countByIpAddressAndAttemptedAtAfter(
+                ipAddress, oneMinuteAgo
+        );
+
+        if (ipAttemptsLastMinute >= perIpRateLimit) {
+            throw new RateLimitExceededException(
+                    "Too many OTP requests from this IP. Please try again in 1 minute.", 60L
+            );
+        }
+    }
+}

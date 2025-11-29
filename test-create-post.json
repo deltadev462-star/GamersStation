@@ -1,0 +1,10 @@
+﻿{
+  "type": "SELL",
+  "title": "PlayStation 5 Console - Like New",
+  "description": "Selling my PS5 in excellent condition. Used for only 3 months. Comes with original box, controller, and all cables. No issues whatsoever.",
+  "price": 2499.99,
+  "condition": "LIKE_NEW",
+  "categoryId": 2,
+  "cityId": 1,
+  "imageUrls": ["https://example.com/ps5-1.jpg", "https://example.com/ps5-2.jpg"]
+}

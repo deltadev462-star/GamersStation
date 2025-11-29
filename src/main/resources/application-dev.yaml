@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    show-sql: true
+  flyway:
+    clean-disabled: false
+
+logging:
+  level:
+    root: INFO
+    com.thegamersstation.marketplace: DEBUG
+    org.springframework.security: DEBUG
+    org.flywaydb: INFO
+
+# Dev-specific overrides
+otp:
+  provider: simulated
+
+messaging:
+  ably:
+    enabled: false
