@@ -99,7 +99,7 @@ const ProductCard = ({
 
         {/* Product Info Section */}
         <div className="product-info">
-          <h3 className="product-title">{title}</h3>
+          <h3 className="product-titlee">{title}</h3>
           
           <p className="product-description">
             {description && description.length > 80
