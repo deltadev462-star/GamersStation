@@ -1,0 +1,227 @@
+/* Privacy Policy Page */
+.privacy-policy-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+}
+
+.privacy-policy-main {
+  flex: 1;
+}
+
+/* Hero Section */
+.privacy-hero {
+  background: linear-gradient(135deg, #1a2332 0%, #0f1823 100%);
+  padding: 80px 20px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.privacy-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 107, 53, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.privacy-hero-container {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.privacy-hero-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+  color: white;
+  box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+}
+
+.privacy-hero-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #f9fafb;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.025em;
+}
+
+.privacy-hero-subtitle {
+  font-size: 1.125rem;
+  color: #9ca3af;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Content Section */
+.privacy-content {
+  padding: 60px 20px;
+}
+
+.privacy-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Section */
+.privacy-section {
+  margin-bottom: 3rem;
+}
+
+.privacy-section:last-child {
+  margin-bottom: 0;
+}
+
+.privacy-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+}
+
+.privacy-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  border-radius: 12px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.privacy-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f9fafb;
+}
+
+/* Items */
+.privacy-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.privacy-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.privacy-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 107, 53, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.privacy-item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.privacy-item-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.privacy-item-icon {
+  display: flex;
+  align-items: center;
+  color: #ff6b35;
+  flex-shrink: 0;
+}
+
+.privacy-item-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.privacy-item-content {
+  padding-inline-start: 40px;
+}
+
+.privacy-item-content p {
+  font-size: 0.95rem;
+  color: #9ca3af;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .privacy-hero {
+    padding: 60px 16px 40px;
+  }
+
+  .privacy-hero-title {
+    font-size: 1.75rem;
+  }
+
+  .privacy-hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .privacy-content {
+    padding: 40px 16px;
+  }
+
+  .privacy-item {
+    padding: 1.25rem;
+  }
+
+  .privacy-item-content {
+    padding-inline-start: 0;
+  }
+
+  .privacy-section-title {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .privacy-hero-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+  }
+
+  .privacy-hero-title {
+    font-size: 1.5rem;
+  }
+
+  .privacy-item-header {
+    flex-wrap: wrap;
+  }
+}

@@ -1,210 +1,81 @@
-/* Language Toggle Styles - Gaming Theme */
+/* Language Toggle — footer placement */
 .language-toggle {
-  /* Remove fixed positioning as it's now inside header */
   position: relative;
-  z-index: 100;
-  margin-right: 20px; /* Always add margin on right side */
+  flex-shrink: 0;
 }
 
 .language-toggle-btn {
-  background: rgba(26, 35, 50, 0.95);
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  border-radius: 25px;
-  padding: 8px 16px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
-  height: 36px;
 }
 
-/* Hover effect */
 .language-toggle-btn:hover {
-  background: rgba(26, 35, 50, 1);
-  border-color: #00ff88;
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-  transform: scale(1.05);
-}
-
-/* Glow effect on hover */
-.language-toggle-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 255, 136, 0.3), transparent);
-  transform: translate(-50%, -50%);
-  transition: width 0.5s, height 0.5s;
-}
-
-.language-toggle-btn:hover::before {
-  width: 100px;
-  height: 100px;
-}
-
-.lang-option {
-  color: rgba(255, 255, 255, 0.6);
-  transition: all 0.3s ease;
-  font-weight: 500;
-  position: relative;
-  z-index: 1;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Flag styling */
-.flag-option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.flag-img {
-  width: 20px;
-  height: 14px;
-  object-fit: cover;
-  
-}
-
-.flag-text {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
- 
-
-.language-toggle-btn:hover .flag-img {
-  filter: grayscale(0) opacity(1);
-  transform: scale(1.05);
-}
-
-.lang-option.active {
-  color: #00ff88;
-  font-weight: 600;
-  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-}
-
-.lang-divider {
-  color: rgba(255, 255, 255, 0.2);
-  margin: 0 6px;
-  font-weight: 300;
-}
-
-/* Keep it on the left regardless of RTL/LTR */
-html[dir="rtl"] .language-toggle {
-  /* Don't change position in RTL mode */
-}
-
-/* Force order in flex container to stay first (leftmost) */
-.header-container {
-  position: relative;
-}
-
-.header-container .language-toggle {
-  order: -1; /* Always be the first element */
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .language-toggle {
-    margin-right: 10px;
-  }
-  
-  .language-toggle-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-    height: 32px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-  
-  .lang-option {
-    font-size: 12px;
-  }
-  
-  /* On mobile, hide text and just show flags/abbreviations */
-  @media (max-width: 480px) {
-    .language-toggle-btn {
-      padding: 6px 10px;
-      gap: 2px;
-    }
-    
-    .lang-divider {
-      margin: 0 4px;
-    }
-    
-    /* Hide text labels on very small screens */
-    .flag-text {
-      display: none;
-    }
-    
-    .flag-img {
-      width: 22px;
-      height: 15px;
-    }
-  }
-}
-
-/* Animation for toggle */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 255, 136, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 255, 136, 0);
-  }
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 107, 53, 0.4);
+  transform: translateY(-1px);
 }
 
 .language-toggle-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
-/* Add subtle animation on language change */
+/* Orange flash on toggle */
+@keyframes lang-flash {
+  0%, 100% { background: rgba(255, 255, 255, 0.06); }
+  40%       { background: rgba(255, 107, 53, 0.15); }
+}
+
 .language-toggle-btn.changing {
-  animation: pulse 0.5s;
+  animation: lang-flash 0.4s ease;
 }
 
-/* Gaming style gradient text for active language */
-@supports (-webkit-background-clip: text) {
-  .lang-option.active .flag-text {
-    background: linear-gradient(90deg, #00ff88, #00cc6a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
+.flag-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Globe icon drawn with CSS */
+.flag-option::before {
+  content: '🌐';
+  font-size: 13px;
+  line-height: 1;
+}
+
+.flag-text {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1;
+  /* Prevent letters from flipping in RTL */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.language-toggle-btn:hover .flag-text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .language-toggle-btn {
+    padding: 5px 12px;
+    height: 32px;
   }
-}
 
-/* Add gaming console style indicators */
-.language-toggle-btn::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #00ff88, transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.language-toggle-btn:hover::after {
-  opacity: 1;
+  .flag-text {
+    font-size: 11px;
+  }
 }

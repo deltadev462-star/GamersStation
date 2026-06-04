@@ -36,6 +36,7 @@ public class PostDto {
     private Long cityId;
     private String cityName;
     private Post.PostStatus status;
+    private boolean sold;
     private List<PostImageDto> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

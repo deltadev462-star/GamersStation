@@ -69,16 +69,16 @@ const MessagesTab = ({ conversations, setConversations, loading, setLoading }) =
     
     // If less than 24 hours, show time
     if (diff < 24 * 60 * 60 * 1000) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' });
     }
     
     // If less than a week, show day
     if (diff < 7 * 24 * 60 * 60 * 1000) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+      return date.toLocaleDateString([], { weekday: 'short', timeZone: 'Asia/Riyadh' });
     }
     
     // Otherwise show date
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'Asia/Riyadh' });
   };
 
   const handleConversationClick = (conversation) => {
@@ -118,15 +118,11 @@ const MessagesTab = ({ conversations, setConversations, loading, setLoading }) =
       </div>
 
       <div className="conversations-list">
-      {conversations
-        .filter(conversation => {
-          // Filter to show only conversations where current user is the seller
+      {conversations.map(conversation => {
+          // Determine who the other participant is
           const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-          return conversation.seller?.id === currentUser?.id;
-        })
-        .map(conversation => {
-          // Since we filtered for seller, the other participant is always the buyer
-          const otherParticipant = conversation.buyer;
+          const isUserSeller = conversation.seller?.id === currentUser?.userId;
+          const otherParticipant = isUserSeller ? conversation.buyer : conversation.seller;
 
           return (
             <div 
@@ -150,9 +146,14 @@ const MessagesTab = ({ conversations, setConversations, loading, setLoading }) =
               <div className="conversation-content">
                 <div className="conversation-header">
                   <h4 className="conversation-username">{otherParticipant?.username || t('chat.unknownUser')}</h4>
-                  <span className="conversation-time">
-                    {formatTime(conversation.lastMessageAt)}
-                  </span>
+                  <div className="conversation-header-end">
+                    <span className="conversation-time">
+                      {formatTime(conversation.lastMessageAt)}
+                    </span>
+                    {conversation.unreadCount > 0 && (
+                      <span className="unread-badge">{conversation.unreadCount}</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="conversation-preview">
@@ -164,9 +165,6 @@ const MessagesTab = ({ conversations, setConversations, loading, setLoading }) =
                   </p>
 
                   <div className="conversation-status">
-                    {conversation.unreadCount > 0 && (
-                      <span className="unread-badge">{conversation.unreadCount}</span>
-                    )}
                     {conversation.lastMessage?.isOwn && (
                       conversation.lastMessage?.readAt ? (
                         <CheckCheck size={16} className="read-icon" />

@@ -85,7 +85,10 @@ public class CategoryService {
             level = parent.getLevel() + 1;
             
             if (level > 3) {
-                throw new BusinessRuleException("Maximum category depth is 3 levels");
+                throw new BusinessRuleException(
+                    "Maximum category depth is 3 levels",
+                    "الحد الأقصى لعمق التصنيف هو 3 مستويات"
+                );
             }
         }
 
@@ -97,7 +100,10 @@ public class CategoryService {
 
         // Validate slug uniqueness
         if (categoryRepository.existsBySlug(slug)) {
-            throw new BusinessRuleException("Slug already exists");
+            throw new BusinessRuleException(
+                "Slug already exists",
+                "هذا الرابط مستخدم بالفعل"
+            );
         }
 
         // Determine sort order
@@ -135,7 +141,10 @@ public class CategoryService {
         // Update slug
         if (updateDto.getSlug() != null) {
             if (categoryRepository.existsBySlugAndIdNot(updateDto.getSlug(), id)) {
-                throw new BusinessRuleException("Slug already exists");
+                throw new BusinessRuleException(
+                    "Slug already exists",
+                    "هذا الرابط مستخدم بالفعل"
+                );
             }
             category.setSlug(updateDto.getSlug());
         }
@@ -147,12 +156,18 @@ public class CategoryService {
             
             int newLevel = newParent.getLevel() + 1;
             if (newLevel > 3) {
-                throw new BusinessRuleException("Moving this category would exceed maximum depth of 3 levels");
+                throw new BusinessRuleException(
+                    "Moving this category would exceed maximum depth of 3 levels",
+                    "نقل هذا التصنيف سيتجاوز الحد الأقصى للعمق وهو 3 مستويات"
+                );
             }
             
             // Check if new parent is not a child of current category
             if (isDescendant(id, updateDto.getParentId())) {
-                throw new BusinessRuleException("Cannot move category to its own descendant");
+                throw new BusinessRuleException(
+                    "Cannot move category to its own descendant",
+                    "لا يمكن نقل التصنيف إلى أحد تصنيفاته الفرعية"
+                );
             }
             
             category.setParentId(updateDto.getParentId());
@@ -183,7 +198,10 @@ public class CategoryService {
         // Check for children
         long childCount = categoryRepository.countByParentId(id);
         if (childCount > 0) {
-            throw new BusinessRuleException("Cannot delete category with children");
+            throw new BusinessRuleException(
+                "Cannot delete category with children",
+                "لا يمكن حذف تصنيف يحتوي على تصنيفات فرعية"
+            );
         }
 
         // TODO: Check for ads when Ads module is implemented

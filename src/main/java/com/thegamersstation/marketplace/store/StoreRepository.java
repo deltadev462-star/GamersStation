@@ -15,4 +15,6 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     boolean existsBySlug(String slug);
     
     boolean existsByOwnerId(Long ownerId);
+
+    java.util.List<Store> findByIsActiveTrue();
 }

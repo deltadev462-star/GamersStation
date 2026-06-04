@@ -26,22 +26,22 @@ class CategoryService {
     }
   }
   
-  // Helper method to flatten category tree
-  flattenCategoryTree(tree, result = []) {
+  // Helper method to flatten category tree (derives parentId/level from tree depth)
+  flattenCategoryTree(tree, result = [], parentId = null, level = 1) {
     for (const node of tree) {
       result.push({
         id: node.id,
         nameEn: node.nameEn,
         nameAr: node.nameAr,
         slug: node.slug,
-        parentId: node.parentId,
-        level: node.level,
+        parentId: parentId,
+        level: level,
         sortOrder: node.sortOrder,
         isActive: node.isActive,
       });
       
       if (node.children && node.children.length > 0) {
-        this.flattenCategoryTree(node.children, result);
+        this.flattenCategoryTree(node.children, result, node.id, level + 1);
       }
     }
     return result;

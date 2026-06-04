@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Slf4j
@@ -47,11 +48,13 @@ public class JwtUtil {
     }
 
     /**
-     * Generate refresh token
+     * Generate refresh token with a unique jti for revocation tracking.
+     * @return the signed JWT string
      */
     public String generateRefreshToken(Long userId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
+        claims.put("jti", UUID.randomUUID().toString());
         
         return createToken(claims, userId.toString(), refreshTokenExpiration);
     }
@@ -107,6 +110,13 @@ public class JwtUtil {
      */
     public String extractTokenType(String token) {
         return extractClaim(token, claims -> claims.get("type", String.class));
+    }
+
+    /**
+     * Extract jti (JWT ID) from token.
+     */
+    public String extractJti(String token) {
+        return extractClaim(token, claims -> claims.get("jti", String.class));
     }
 
     /**

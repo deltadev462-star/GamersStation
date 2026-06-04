@@ -8,9 +8,14 @@ import lombok.Data;
 public class ImageUploadResponseDto {
     
     /**
-     * Public URL of uploaded image
+     * Public URL of uploaded image (original size)
      */
     private String url;
+
+    /**
+     * Public URL of the thumbnail (400px wide)
+     */
+    private String thumbnailUrl;
     
     /**
      * Original filename

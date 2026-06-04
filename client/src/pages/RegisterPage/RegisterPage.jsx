@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import FormInput from '../../components/FormInput/FormInput';
 import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher';
 import authService from '../../services/authService';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
 import './RegisterPage.css';
 
 const RegisterPage = () => {
@@ -15,6 +16,7 @@ const RegisterPage = () => {
     phoneNumber: '',
     otp: ''
   });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -57,6 +59,10 @@ const RegisterPage = () => {
         newErrors.phoneNumber = t('auth.errors.phoneInvalid');
       }
     }
+
+    if (!agreedToTerms) {
+      newErrors.terms = t('auth.errors.termsRequired');
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,7 +99,7 @@ const RegisterPage = () => {
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
-      setErrors({ phoneNumber: error.message || t('auth.errors.requestOtpFailed') });
+      showError(error);
     }
   };
 
@@ -119,7 +125,7 @@ const RegisterPage = () => {
       }, 1500);
     } catch (error) {
       setIsLoading(false);
-      setErrors({ otp: error.message || t('auth.errors.verifyOtpFailed') });
+      showError(error);
     }
   };
 
@@ -135,7 +141,7 @@ const RegisterPage = () => {
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
-      setErrors({ otp: error.message || t('auth.errors.requestOtpFailed') });
+      showError(error);
     }
   };
 
@@ -220,6 +226,33 @@ const RegisterPage = () => {
                     autoComplete="tel"
                     disabled={isLoading}
                   />
+
+                  {/* Terms Checkbox */}
+                  <label className="terms-checkbox">
+                    <input
+                      type="checkbox"
+                      className="checkbox-input"
+                      checked={agreedToTerms}
+                      onChange={(e) => {
+                        setAgreedToTerms(e.target.checked);
+                        if (errors.terms) {
+                          setErrors(prev => ({ ...prev, terms: '' }));
+                        }
+                      }}
+                    />
+                    <span className="checkbox-custom"></span>
+                    <span className="checkbox-label">
+                      {t('auth.register.agreeToTerms')}{' '}
+                      <Link to="/privacy-policy" className="terms-link" target="_blank">
+                        {t('auth.register.termsOfService')}
+                      </Link>
+                      {' '}{t('auth.register.and')}{' '}
+                      <Link to="/privacy-policy" className="terms-link" target="_blank">
+                        {t('auth.register.privacyPolicy')}
+                      </Link>
+                    </span>
+                  </label>
+                  {errors.terms && <span className="terms-error">{errors.terms}</span>}
 
                   <button
                     type="submit"

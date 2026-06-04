@@ -63,8 +63,8 @@ public class MessageBirdOtpService implements OtpService {
     }
 
     @Override
-    public void sendOtp(String phoneNumber, String ipAddress) {
-        log.info("Sending MessageBird OTP to phone: {}", phoneNumber);
+    public void sendOtp(String phoneNumber, String ipAddress, String language) {
+        log.info("Sending MessageBird OTP to phone: {} in language: {}", phoneNumber, language);
 
         // Validate phone format
         if (!PhoneValidator.isValid(phoneNumber)) {
@@ -80,7 +80,15 @@ public class MessageBirdOtpService implements OtpService {
             verifyRequest.setOriginator(originator);
             verifyRequest.setTimeout(ttlMinutes * 60); // Convert to seconds
             verifyRequest.setType("sms");
-            verifyRequest.setTemplate("Your verification code is %token");
+            
+            // Set template based on language
+            String template;
+            if ("en".equalsIgnoreCase(language)) {
+                template = "Your verification code: %token  For login thegamersstation.com";
+            } else {
+                template = "رمز التحقق:%token لدخول منصة thegamersstation.com";
+            }
+            verifyRequest.setTemplate(template);
 
             // Send verification through MessageBird
             Verify verify = messageBirdClient.sendVerifyToken(verifyRequest);

@@ -5,6 +5,7 @@ import com.thegamersstation.marketplace.city.City;
 import com.thegamersstation.marketplace.store.Store;
 import com.thegamersstation.marketplace.user.repository.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -112,6 +113,7 @@ public class Post {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
+    @BatchSize(size = 20)
     @Builder.Default
     private List<PostImage> images = new ArrayList<>();
 

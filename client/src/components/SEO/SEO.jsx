@@ -3,10 +3,10 @@ import { Helmet } from 'react-helmet-async';
 
 const SEO = ({ 
   title = '',
-  description = 'اكتشف أفضل الألعاب والأجهزة والإكسسوارات من تجار موثوقين. PlayStation، Xbox، Nintendo، وأجهزة الكمبيوتر. توصيل سريع وأسعار تنافسية.',
+  description = 'منصتك الأولى للألعاب والمنتجات الرقمية في المملكة العربية السعودية.',
   keywords = 'ألعاب إلكترونية, بلايستيشن, إكس بوكس, نينتندو, ألعاب كمبيوتر, PS5, Xbox Series X, gaming, السعودية',
-  image = 'https://gamersstation.eg/og-image.jpg',
-  url = 'https://gamersstation.eg',
+  image = 'https://gamers-station.com/og-image.jpg',
+  url = 'https://gamers-station.com',
   type = 'website',
   author = 'GamersStation',
   structuredData = null,
@@ -24,8 +24,8 @@ const SEO = ({
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "GamersStation",
-    "url": "https://gamersstation.eg",
-    "logo": "https://gamersstation.eg/logo.svg",
+    "url": "https://gamers-station.com",
+    "logo": "https://gamers-station.com/logo.svg",
     "description": "أكبر سوق للألعاب الإلكترونية في السعودية",
     "address": {
       "@type": "PostalAddress",

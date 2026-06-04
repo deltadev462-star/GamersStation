@@ -26,7 +26,7 @@ public class AuthController {
     @PostMapping("/otp/request")
     @Operation(
         summary = "Request OTP",
-        description = "Send OTP code to phone number. Rate limited to prevent abuse.",
+        description = "Send OTP code to phone number. Rate limited to prevent abuse. Language is determined by Accept-Language header (ar or en, defaults to ar).",
         responses = {
             @ApiResponse(
                 responseCode = "200",
@@ -42,7 +42,8 @@ public class AuthController {
             HttpServletRequest httpRequest
     ) {
         String ipAddress = getClientIp(httpRequest);
-        OtpResponseDto response = authService.requestOtp(request, ipAddress);
+        String language = extractLanguage(httpRequest);
+        OtpResponseDto response = authService.requestOtp(request, ipAddress, language);
         return ResponseEntity.ok(response);
     }
 
@@ -88,14 +89,55 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/logout")
+    @Operation(
+        summary = "Logout and revoke session",
+        description = "Revoke the refresh token family so the session cannot be reused. Always returns 200.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Logged out successfully")
+        }
+    )
+    public ResponseEntity<Void> logout(
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) {
+        String refreshToken = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            refreshToken = authHeader.substring(7);
+        }
+        authService.logout(refreshToken);
+        return ResponseEntity.ok().build();
+    }
+
     /**
      * Extract client IP address from request
      */
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
+        // Rely on Spring's forward-headers-strategy: native to resolve
+        // the correct remote address from trusted proxy headers
         return request.getRemoteAddr();
+    }
+
+    /**
+     * Extract language from Accept-Language header
+     * Supports: ar, en, ar-SA, en-US, etc.
+     * Defaults to ar if not specified or unsupported
+     */
+    private String extractLanguage(HttpServletRequest request) {
+        String acceptLanguage = request.getHeader("Accept-Language");
+        
+        if (acceptLanguage == null || acceptLanguage.isEmpty()) {
+            return "ar"; // Default to Arabic
+        }
+        
+        // Parse the Accept-Language header (e.g., "en-US,en;q=0.9,ar;q=0.8")
+        // Take the first language code
+        String primaryLanguage = acceptLanguage.split(",")[0].split("-")[0].toLowerCase();
+        
+        // Support only ar and en
+        if ("en".equals(primaryLanguage)) {
+            return "en";
+        }
+        
+        return "ar"; // Default to Arabic for any other language
     }
 }

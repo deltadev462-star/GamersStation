@@ -2,6 +2,7 @@ package com.thegamersstation.marketplace.post;
 
 import com.thegamersstation.marketplace.post.dto.PostDto;
 import com.thegamersstation.marketplace.post.dto.CreatePostRequest;
+import com.thegamersstation.marketplace.post.dto.MarkAsSoldRequest;
 import com.thegamersstation.marketplace.post.dto.UpdatePostRequest;
 import com.thegamersstation.marketplace.common.dto.PageResponseDto;
 import com.thegamersstation.marketplace.security.SecurityUtil;
@@ -18,11 +19,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Set;
+
 @RestController
 @RequestMapping("/posts")
 @RequiredArgsConstructor
 @Tag(name = "Posts", description = "Post management endpoints")
 public class PostController {
+    
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+        "createdAt", "price", "title", "updatedAt"
+    );
     
     private final PostService PostService;
     
@@ -67,11 +74,13 @@ public class PostController {
         @RequestParam(required = false) java.math.BigDecimal minPrice,
         @RequestParam(required = false) java.math.BigDecimal maxPrice,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "createdAt") String sortBy,
         @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        int safeSize = Math.min(Math.max(size, 1), 50);
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
+        Pageable pageable = PageRequest.of(page, safeSize, Sort.by(direction, safeSortBy));
         PageResponseDto<PostDto> ads = PostService.searchPosts(categoryId, categoryIds, cityId, type, condition, minPrice, maxPrice, pageable);
         return ResponseEntity.ok(ads);
     }
@@ -92,12 +101,13 @@ public class PostController {
         @RequestParam(required = false) java.math.BigDecimal minPrice,
         @RequestParam(required = false) java.math.BigDecimal maxPrice,
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "newest") String sort
     ) {
+        int safeSize = Math.min(Math.max(size, 1), 50);
         // Parse sort parameter
         Sort sorting = parseSortParameter(sort);
-        Pageable pageable = PageRequest.of(page, size, sorting);
+        Pageable pageable = PageRequest.of(page, safeSize, sorting);
         
         PageResponseDto<PostDto> posts = PostService.advancedSearchPosts(
             q, categoryId, cityId, regionId, type, condition, minPrice, maxPrice, pageable
@@ -122,12 +132,14 @@ public class PostController {
     @Operation(summary = "Get my posts")
     public ResponseEntity<PageResponseDto<PostDto>> getMyPosts(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "createdAt") String sortBy,
         @RequestParam(defaultValue = "DESC") Sort.Direction direction
     ) {
+        int safeSize = Math.min(Math.max(size, 1), 50);
         Long userId = SecurityUtil.getCurrentUserId();
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
+        Pageable pageable = PageRequest.of(page, safeSize, Sort.by(direction, safeSortBy));
         PageResponseDto<PostDto> ads = PostService.getMyPosts(userId, pageable);
         return ResponseEntity.ok(ads);
     }
@@ -146,9 +158,12 @@ public class PostController {
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Mark Post as sold")
-    public ResponseEntity<Void> markAsSold(@PathVariable Long id) {
+    public ResponseEntity<Void> markAsSold(
+        @PathVariable Long id,
+        @Valid @RequestBody MarkAsSoldRequest request
+    ) {
         Long userId = SecurityUtil.getCurrentUserId();
-        PostService.markAsSold(id, userId);
+        PostService.markAsSold(id, userId, request.getSoldThroughPlatform());
         return ResponseEntity.noContent().build();
     }
 }

@@ -249,7 +249,7 @@ const FAQPage = () => {
         title={t('pages.faq.title')}
         description={t('pages.faq.subtitle')}
         keywords="الأسئلة الشائعة, FAQ, مساعدة, دعم العملاء, GamersStation, أسئلة وأجوبة"
-        url="https://gamersstation.eg/faq"
+        url="https://gamers-station.com/faq"
       />
       <Header />
       

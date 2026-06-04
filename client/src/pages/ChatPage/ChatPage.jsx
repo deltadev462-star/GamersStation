@@ -15,6 +15,7 @@ import {
 import Header from "../../components/Header/Header";
 import messagingService from "../../services/messagingService";
 import authService from "../../services/authService";
+import { showError } from "../../components/ErrorNotification/ErrorNotification";
 import "./ChatPage.css";
 
 const ChatPage = () => {
@@ -133,6 +134,7 @@ const ChatPage = () => {
         }
 
         setError(t("chat.loadError"));
+        showError(err);
       } finally {
         setLoading(false);
       }
@@ -197,7 +199,8 @@ const ChatPage = () => {
       setHasMore(response.hasMore);
       setCursor(response.nextCursor);
     } catch (err) {
-      // Error loading messages
+      console.error('Error loading messages:', err);
+      showError(err);
     } finally {
       setLoadingMore(false);
     }
@@ -278,7 +281,8 @@ const ChatPage = () => {
         unsubscribeStatus =
           messagingService.onConnectionStatusChange(setConnectionStatus);
       } catch (error) {
-        // Failed to setup subscriptions
+        console.error('Failed to setup subscriptions:', error);
+        showError(error);
       }
     };
 
@@ -428,6 +432,7 @@ const ChatPage = () => {
         {
           hour: "2-digit",
           minute: "2-digit",
+          timeZone: "Asia/Riyadh",
         }
       );
     } else {
@@ -436,6 +441,7 @@ const ChatPage = () => {
         {
           day: "numeric",
           month: "short",
+          timeZone: "Asia/Riyadh",
         }
       );
     }
@@ -548,7 +554,7 @@ const ChatPage = () => {
         <div className="chat-messages">
           <div className="messages-container">
             {/* Load more button */}
-            {/* {hasMore && !loadingMore && (
+            {hasMore && !loadingMore && (
               <button
                 className="load-more-btn"
                 onClick={() => loadMessages(true, cursor)}
@@ -561,7 +567,7 @@ const ChatPage = () => {
               <div className="loading-more">
                 <Loader2 className="spinner" size={20} />
               </div>
-            )} */}
+            )}
 
             {/* Error message */}
             {error && (
@@ -637,12 +643,26 @@ const ChatPage = () => {
               }
               value={message}
               onChange={(e) => {
-                setMessage(e.target.value);
-                handleTyping();
+                const value = e.target.value;
+                // Limit to 250 characters
+                if (value.length <= 250) {
+                  setMessage(value);
+                  handleTyping();
+                }
               }}
               onBlur={handleTypingStop}
               disabled={sending}
+              maxLength={250}
             />
+            <span className="char-counter" style={{ 
+              fontSize: '0.75rem', 
+              color: message.length >= 250 ? '#ff4444' : 'rgba(255, 255, 255, 0.5)',
+              position: 'absolute',
+              bottom: '8px',
+              right: '60px'
+            }}>
+              {message.length}/250
+            </span>
 
             <button
               type="submit"

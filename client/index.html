@@ -2,12 +2,13 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    
+    <meta name="google-site-verification" content="BqnVmo2WQcJOmE_-erWRPmCtu4GB2LTX9WLOED1yu3U" />
     <!-- Early Resource Hints for Critical Third-Party Domains -->
+    <link rel="preconnect" href="https://d2s2tw7g1k5ok1.cloudfront.net" crossorigin>
+    <link rel="dns-prefetch" href="https://d2s2tw7g1k5ok1.cloudfront.net">
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://api.gamersstation.eg" crossorigin>
-    <link rel="dns-prefetch" href="https://images.unsplash.com">
     <link rel="dns-prefetch" href="https://api.gamersstation.eg">
     
     <!-- Preload Critical Resources -->
@@ -71,10 +72,8 @@
     <!-- Inline Critical CSS for Faster Initial Paint -->
     <style>
       /* Critical CSS for Above-the-fold Content */
-      body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;background:#f5f5f5}
+      body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,'Open Sans','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;background:#0a0e1a}
       #root{min-height:100vh}
-      .loading-spinner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #3498db;border-radius:50%;animation:spin 1s linear infinite}
-      @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
       /* Prevent CLS for hero section */
       .hero{min-height:500px;position:relative}
       @media(max-width:768px){.hero{min-height:400px}}
@@ -116,20 +115,9 @@
   </head>
   <body>
     <!-- Loading Fallback -->
-    <div id="root">
-      <div class="loading-spinner" id="initial-loader"></div>
-    </div>
+    <div id="root"></div>
     
-    <!-- Inline Script to Remove Loader -->
     <script>
-      // Remove loader once React mounts
-      window.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-          const loader = document.getElementById('initial-loader');
-          if (loader) loader.style.display = 'none';
-        }, 100);
-      });
-      
       // Network Information API
       if ('connection' in navigator) {
         const connection = navigator.connection;
@@ -148,7 +136,6 @@
     <!-- Fallback for No JavaScript -->
     <noscript>
       <style>
-        .loading-spinner { display: none !important; }
         .noscript-message {
           text-align: center;
           padding: 50px 20px;

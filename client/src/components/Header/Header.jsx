@@ -1,10 +1,10 @@
 import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, ChevronDown, Menu, X, LogIn, UserPlus, MessageCircle } from 'lucide-react';
+import { Search, User, LogIn, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import authService from '../../services/authService';
 import messagingService from '../../services/messagingService';
+import SearchOverlay from '../SearchOverlay/SearchOverlay';
 import './Header.css';
 
 // Memoized navigation link component - Using React Router Link for SPA navigation
@@ -43,6 +43,7 @@ const Header = memo(() => {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [searchValue, setSearchValue] = useState('');
   const [mobileSearchValue, setMobileSearchValue] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
 
   // Update active link based on current location
@@ -207,6 +208,7 @@ const Header = memo(() => {
         <Link to="/" className="header-logo">
           <img src="/logo.svg" alt="GamersStation" className="logo-icon" loading="eager" />
           <span className="logo-text">GamersStation</span>
+          <span className="logo-beta">beta</span>
         </Link>
 
         {/* Navigation - removed per requirement */}
@@ -215,17 +217,20 @@ const Header = memo(() => {
 
         {/* User Actions */}
         <div className="header-actions">
-          <LanguageSwitcher />
+          {/* Search Icon Button */}
+          <button
+            className="action-btn header-icon-btn"
+            onClick={() => setIsSearchOpen(true)}
+            aria-label={t('header.search')}
+          >
+            <Search size={20} />
+          </button>
+
+          {/* User Icon Button */}
           {isAuthenticated ? (
             <div className="auth-dropdown">
-              <button className="action-btn user-btn">
-                <div className="user-profile-img">
-                  <User size={22} />
-                </div>
-                {currentUser?.username && (
-                  <span className="user-name">{currentUser.username}</span>
-                )}
-                <ChevronDown size={16} />
+              <button className="action-btn header-icon-btn" style={{ position: 'relative' }}>
+                <User size={20} />
                 {unreadMessagesCount > 0 && (
                   <span className="user-unread-badge">{unreadMessagesCount}</span>
                 )}
@@ -249,19 +254,21 @@ const Header = memo(() => {
               </div>
             </div>
           ) : (
-            <div className="auth-buttons">
-              <Link to="/login" className="auth-btn login-btn">
-                <LogIn size={16} />
-                <span>{t('header.login')}</span>
-              </Link>
-              <Link to="/register" className="auth-btn register-btn">
-                <UserPlus size={16} />
-                <span>{t('header.register')}</span>
-              </Link>
-            </div>
+            <button
+              className="action-btn header-icon-btn"
+              onClick={() => navigate('/login')}
+              aria-label={t('header.login')}
+            >
+              <User size={20} />
+            </button>
           )}
         </div>
       </div>
+
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
 
       {/*  
       <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>

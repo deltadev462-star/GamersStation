@@ -27,7 +27,22 @@ public class UserService {
     public UserProfileDto getCurrentUserProfile(Long userId) {
         User user = usersRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return userMapper.toProfileDto(user);
+        
+        UserProfileDto profileDto = userMapper.toProfileDto(user);
+        
+        // Add city information if cityId exists
+        if (user.getCityId() != null) {
+            cityRepository.findById(user.getCityId())
+                    .ifPresent(city -> profileDto.setCity(
+                        UserProfileDto.CityInfo.builder()
+                            .id(city.getId())
+                            .nameEn(city.getNameEn())
+                            .nameAr(city.getNameAr())
+                            .build()
+                    ));
+        }
+        
+        return profileDto;
     }
 
     @Transactional(readOnly = true)
@@ -54,7 +69,7 @@ public class UserService {
         if (updateDto.getUsername() != null &&
             !updateDto.getUsername().equals(user.getUsername())) {
             if (usersRepository.existsByUsername(updateDto.getUsername())) {
-                throw new BusinessRuleException("Username already taken");
+                throw new BusinessRuleException("Username already taken","راحت عليك في واحد قبلك سبقك واخذ الاسم");
             }
             user.setUsername(updateDto.getUsername());
         }
@@ -102,6 +117,21 @@ public class UserService {
         }
 
         User savedUser = usersRepository.save(user);
-        return userMapper.toProfileDto(savedUser);
+        
+        UserProfileDto profileDto = userMapper.toProfileDto(savedUser);
+        
+        // Add city information if cityId exists
+        if (savedUser.getCityId() != null) {
+            cityRepository.findById(savedUser.getCityId())
+                    .ifPresent(city -> profileDto.setCity(
+                        UserProfileDto.CityInfo.builder()
+                            .id(city.getId())
+                            .nameEn(city.getNameEn())
+                            .nameAr(city.getNameAr())
+                            .build()
+                    ));
+        }
+        
+        return profileDto;
     }
 }

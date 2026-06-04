@@ -41,4 +41,7 @@ public class AuthResponseDto {
 
     @Schema(description = "Whether this is a new user (first login)", example = "true")
     private Boolean isNewUser;
+
+    @Schema(description = "Whether user has an email address set", example = "false")
+    private Boolean hasEmail;
 }

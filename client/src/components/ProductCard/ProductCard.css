@@ -26,11 +26,53 @@
   box-shadow: 0 4px 20px rgba(255, 107, 53, 0.2);
 }
 
+/* SOLD Overlay */
+.product-card-sold {
+  pointer-events: none;
+  opacity: 0.75;
+  position: relative;
+}
+
+.product-card-sold .product-image,
+.product-card-sold .product-content {
+  filter: grayscale(100%);
+}
+
+.product-card-sold:hover {
+  transform: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.sold-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
+}
+
+.sold-overlay-text {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  padding: 5px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  background: rgba(255, 107, 53, 0.85);
+}
+
 /* Badge */
 .badge-container {
   position: absolute;
   top: 12px;
-  right: 12px;
+  inset-inline-end: 12px;
   z-index: 10;
 }
 
@@ -46,69 +88,29 @@
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
 
-/* Product Type Badge - Modern Design */
-.product-type-badge {
+/* Condition Badge */
+.condition-badge {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  inset-inline-start: 10px;
   z-index: 11;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 8px;
-  font-size: 12px;
+  background: rgba(8, 12, 22, 0.72);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 11px;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  backdrop-filter: blur(20px);
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: perspective(100px) rotateX(0deg);
+  letter-spacing: 0.3px;
 }
 
-.product-type-badge.type-sell {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  box-shadow:
-    0 4px 12px rgba(16, 185, 129, 0.35),
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.product-type-badge.type-ask {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow:
-    0 4px 12px rgba(59, 130, 246, 0.35),
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.product-type-badge:hover {
-  transform: perspective(100px) rotateX(10deg) translateY(-2px);
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.product-type-badge svg {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-[dir="rtl"] .product-type-badge {
-  left: auto;
-  right: 12px;
-}
-
-[dir="rtl"] .badge-container {
-  right: auto;
-  left: 12px;
-}
 
 /* Image Section */
 .product-image {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 150px;
   overflow: hidden;
   background: #f8f9fa;
 }
@@ -127,34 +129,38 @@
 
 /* Product Content */
 .product-content {
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 12px;
-  position: relative;
-  padding-bottom: 50px; /* Space for price at bottom */
+  gap: 8px;
 }
 
 /* User Info Section */
 .user-info-section {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
+  gap: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
+}
+
+.avatar-initial {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .user-details {
@@ -168,7 +174,7 @@
 }
 
 .username-text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.85);
   white-space: nowrap;
@@ -198,15 +204,16 @@
 
 /* Product Info */
 .product-info {
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .product-titlee {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 8px 0;
+  margin: 0;
   line-height: 1.3;
+  min-height: calc(2 * 14px * 1.3);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -215,42 +222,6 @@
   letter-spacing: -0.2px;
 }
 
-.product-description {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
-  line-height: 1.5;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Platform Tags */
-.product-platforms {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.platform-tag {
-  background: rgba(255, 107, 53, 0.15);
-  color: #ff8c42;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  border: 1px solid rgba(255, 107, 53, 0.3);
-}
-
-.platform-tag.more {
-  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
-  color: white;
-  border: none;
-}
 
 /* Rating Section - Above Title */
 .rating-section {
@@ -340,23 +311,47 @@
 
 .current-price {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  direction: ltr;
+  gap: 8px;
+  margin-top: auto;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.current-price .price-currency {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
+/* Orange nav arrow button */
+.card-nav-btn {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 8px;
+  background: #ff6b35;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+  margin-inline-end: auto;
+}
+
+.card-nav-btn:hover {
+  background: #ff5722;
+  transform: scale(1.08);
+}
+
+.price-currency-icon {
+  height: 18px;
+  width: auto;
+  opacity: 0.5;
+  filter: invert(1);
 }
 
 .price-valuee {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
   -webkit-background-clip: text;
@@ -379,23 +374,56 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .product-card {
-    border-radius: 12px;
+    border-radius: 10px;
   }
   
   .product-image {
-    height: 180px;
+    height: 120px;
   }
   
   .product-content {
-    padding: 14px;
+    padding: 10px;
+    gap: 6px;
   }
   
-  .product-title {
-    font-size: 15px;
+  .product-titlee {
+    font-size: 13px;
+    min-height: calc(2 * 13px * 1.3);
   }
   
-  .price-value {
-    font-size: 16px;
+  .user-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .avatar-initial {
+    font-size: 11px;
+  }
+  
+  .username-text {
+    font-size: 12px;
+  }
+  
+  .user-location span {
+    font-size: 11px;
+  }
+  
+  .product-type-badge {
+    top: 8px;
+    inset-inline-start: 8px;
+    padding: 4px 8px;
+    font-size: 10px;
+    gap: 4px;
+  }
+  
+  .product-type-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .badge-container {
+    top: 8px;
+    inset-inline-end: 8px;
   }
 }
 
@@ -445,33 +473,19 @@
   }
 }
 
-/* RTL support - price stays on left */
-[dir="rtl"] .current-price {
-  /* Price always stays on left side */
-  left: 16px;
-  right: auto;
-}
 
 /* Responsive price position */
 @media (max-width: 768px) {
   .current-price {
-    font-size: 14px;
-    padding: 6px 10px;
-    bottom: 14px;
-    left: 14px;
-  }
-  
-  .current-price .price-currency {
-    font-size: 12px;
+    padding: 6px 0 0;
+    gap: 4px;
   }
   
   .price-valuee {
-    font-size: 18px;
+    font-size: 16px;
   }
   
-  [dir="rtl"] .current-price {
-    /* Price always stays on left side */
-    left: 14px;
-    right: auto;
+  .price-currency-icon {
+    height: 13px;
   }
 }

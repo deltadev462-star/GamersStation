@@ -6,6 +6,9 @@ import FormInput from '../../components/FormInput/FormInput';
 import SuccessPopup from '../../components/SuccessPopup/SuccessPopup';
 import userService from '../../services/userService';
 import cityService from '../../services/cityService';
+import regionService from '../../services/regionService';
+import SearchableSelect from '../../components/SearchableSelect/SearchableSelect';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
 import './ProfileCompletePage.css';
 
 const ProfileCompletePage = () => {
@@ -16,33 +19,81 @@ const ProfileCompletePage = () => {
     email: '',
     cityId: ''
   });
+  const [regions, setRegions] = useState([]);
   const [cities, setCities] = useState([]);
+  const [selectedRegionId, setSelectedRegionId] = useState('');
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingCities, setIsLoadingCities] = useState(true);
+  const [isLoadingRegions, setIsLoadingRegions] = useState(true);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  // Fetch cities on mount
+  // Determine if this is an existing user who only needs to add email
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isEmailOnlyMode = storedUser.profileCompleted && !storedUser.hasEmail;
+
+  // Fetch regions on mount
   useEffect(() => {
-    const fetchCities = async () => {
+    const fetchRegions = async () => {
       try {
-        const citiesData = await cityService.getCities();
-        setCities(citiesData);
+        const regionsData = await regionService.getRegions();
+        setRegions(regionsData);
       } catch (error) {
-        console.error('Error fetching cities:', error);
+        console.error('Error fetching regions:', error);
+        showError(error);
       } finally {
-        setIsLoadingCities(false);
+        setIsLoadingRegions(false);
       }
     };
 
-    fetchCities();
+    fetchRegions();
   }, []);
+
+  // Fetch cities when region changes
+  useEffect(() => {
+    if (selectedRegionId) {
+      const fetchCities = async () => {
+        setIsLoadingCities(true);
+        try {
+          const citiesData = await cityService.getCities(selectedRegionId);
+          setCities(citiesData);
+        } catch (error) {
+          console.error('Error fetching cities:', error);
+          showError(error);
+        } finally {
+          setIsLoadingCities(false);
+        }
+      };
+      fetchCities();
+    } else {
+      setCities([]);
+    }
+  }, [selectedRegionId]);
+
+  // Pre-fill form for existing users and fetch their profile
+  useEffect(() => {
+    if (isEmailOnlyMode) {
+      const fetchProfile = async () => {
+        try {
+          const profile = await userService.getCurrentUserProfile();
+          setFormData(prev => ({
+            ...prev,
+            username: profile.username || '',
+            cityId: profile.cityId ? String(profile.cityId) : '',
+          }));
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      };
+      fetchProfile();
+    }
+  }, [isEmailOnlyMode]);
 
   // Check if user needs to complete profile
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.profileCompleted) {
+    if (user.profileCompleted && user.hasEmail) {
       navigate('/');
     }
   }, [navigate]);
@@ -80,8 +131,10 @@ const ProfileCompletePage = () => {
       }
     }
     
-    if (name === 'email' && value) {
-      if (!/\S+@\S+\.\S+/.test(value)) {
+    if (name === 'email') {
+      if (!value || !value.trim()) {
+        newErrors.email = t('auth.errors.emailRequired') || 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(value)) {
         newErrors.email = t('auth.errors.emailInvalid');
       } else {
         newSuccess.email = t('auth.success.emailValid');
@@ -95,19 +148,23 @@ const ProfileCompletePage = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.username.trim()) {
-      newErrors.username = t('auth.errors.usernameRequired');
-    } else if (formData.username.trim().length < 3) {
-      newErrors.username = t('auth.errors.usernameShort');
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = t('auth.errors.usernameInvalid');
+    if (!isEmailOnlyMode) {
+      if (!formData.username.trim()) {
+        newErrors.username = t('auth.errors.usernameRequired');
+      } else if (formData.username.trim().length < 3) {
+        newErrors.username = t('auth.errors.usernameShort');
+      } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+        newErrors.username = t('auth.errors.usernameInvalid');
+      }
     }
     
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+    if (!formData.email || !formData.email.trim()) {
+      newErrors.email = t('auth.errors.emailRequired') || 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = t('auth.errors.emailInvalid');
     }
     
-    if (!formData.cityId) {
+    if (!isEmailOnlyMode && !formData.cityId) {
       newErrors.cityId = t('auth.errors.cityRequired');
     }
     
@@ -126,15 +183,21 @@ const ProfileCompletePage = () => {
     
     try {
       const profileData = {
-        username: formData.username.trim(),
-        cityId: parseInt(formData.cityId),
+        email: formData.email.trim(),
       };
       
-      if (formData.email) {
-        profileData.email = formData.email.trim();
+      if (!isEmailOnlyMode) {
+        profileData.username = formData.username.trim();
+        profileData.cityId = parseInt(formData.cityId);
       }
       
-      await userService.updateProfile(profileData);
+        await userService.updateProfile(profileData);
+      
+      // Update hasEmail in localStorage so ProtectedRoute stops redirecting
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      currentUser.hasEmail = true;
+      if (!currentUser.profileCompleted) currentUser.profileCompleted = true;
+      localStorage.setItem('user', JSON.stringify(currentUser));
       
       // Show success popup then navigate
       setShowSuccessPopup(true);
@@ -145,18 +208,12 @@ const ProfileCompletePage = () => {
       }, 2000);
     } catch (error) {
       console.error('Error updating profile:', error);
-      setErrors({
-        general: error.message || t('profileComplete.errors.updateFailed')
-      });
+      showError(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSkip = () => {
-    // User can browse without completing profile
-    navigate('/');
-  };
 
   // Icon components
   const UserIcon = () => (
@@ -198,8 +255,16 @@ const ProfileCompletePage = () => {
               <div className="logo-container">
                 <img src="/logo.svg" alt={t('imageAlt.logo')} className="logo-image" />
               </div>
-              <h1 className="profile-title">{t('profileComplete.title')}</h1>
-              <p className="profile-subtitle">{t('profileComplete.subtitle')}</p>
+              <h1 className="profile-title">
+                {isEmailOnlyMode
+                  ? (t('profileComplete.addEmailTitle') || 'Add Your Email')
+                  : t('profileComplete.title')}
+              </h1>
+              <p className="profile-subtitle">
+                {isEmailOnlyMode
+                  ? (t('profileComplete.addEmailSubtitle') || 'Please add your email address to continue receiving important notifications.')
+                  : t('profileComplete.subtitle')}
+              </p>
             </div>
 
             {/* Error Message */}
@@ -211,22 +276,24 @@ const ProfileCompletePage = () => {
 
             {/* Profile Form */}
             <form onSubmit={handleSubmit} className="profile-form">
-              <FormInput
-                label={t('profileComplete.fields.username')}
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder={t('profileComplete.placeholders.username')}
-                error={errors.username}
-                success={success.username}
-                required
-                icon={<UserIcon />}
-                disabled={isLoading}
-                minLength={3}
-                maxLength={20}
-                pattern="[a-zA-Z0-9_]+"
-              />
+              {!isEmailOnlyMode && (
+                <FormInput
+                  label={t('profileComplete.fields.username')}
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder={t('profileComplete.placeholders.username')}
+                  error={errors.username}
+                  success={success.username}
+                  required
+                  icon={<UserIcon />}
+                  disabled={isLoading}
+                  minLength={3}
+                  maxLength={20}
+                  pattern="[a-zA-Z0-9_]+"
+                />
+              )}
 
               <FormInput
                 label={t('profileComplete.fields.email')}
@@ -237,49 +304,67 @@ const ProfileCompletePage = () => {
                 placeholder={t('profileComplete.placeholders.email')}
                 error={errors.email}
                 success={success.email}
+                required
                 icon={<EmailIcon />}
                 disabled={isLoading}
               />
 
-              <div className="form-group">
-                <label className="form-label">
-                  {t('profileComplete.fields.city')} <span className="required">*</span>
-                </label>
-                <div className="select-wrapper">
-                  <CityIcon />
-                  <select
-                    name="cityId"
-                    value={formData.cityId}
-                    onChange={handleChange}
-                    className={`form-select ${errors.cityId ? 'error' : ''}`}
-                    disabled={isLoading || isLoadingCities}
-                    required
-                  >
-                    <option value="">{t('profileComplete.placeholders.city')}</option>
-                    {cities.map(city => (
-                      <option key={city.id} value={city.id}>
-                        {i18n.language === 'ar' ? city.nameAr : city.nameEn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {errors.cityId && (
-                  <span className="error-text">{errors.cityId}</span>
-                )}
-              </div>
+              {!isEmailOnlyMode && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">
+                      {t('profileComplete.fields.region')} <span className="required">*</span>
+                    </label>
+                    <SearchableSelect
+                      options={regions}
+                      value={selectedRegionId}
+                      onChange={(val) => {
+                        setSelectedRegionId(val);
+                        setFormData((prev) => ({ ...prev, cityId: '' }));
+                      }}
+                      placeholder={t('profileComplete.placeholders.region')}
+                      searchPlaceholder={t('profileComplete.placeholders.searchRegion')}
+                      disabled={isLoading || isLoadingRegions}
+                      hasError={!!errors.regionId}
+                      getOptionLabel={(r) => i18n.language === 'ar' ? r.nameAr : r.nameEn}
+                      getOptionValue={(r) => r.id}
+                    />
+                    {errors.regionId && (
+                      <span className="error-text">{errors.regionId}</span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      {t('profileComplete.fields.city')} <span className="required">*</span>
+                    </label>
+                    <SearchableSelect
+                      options={cities}
+                      value={formData.cityId}
+                      onChange={(val) => {
+                        setFormData((prev) => ({ ...prev, cityId: val }));
+                        if (errors.cityId) {
+                          setErrors((prev) => ({ ...prev, cityId: '' }));
+                        }
+                      }}
+                      placeholder={t('profileComplete.placeholders.city')}
+                      searchPlaceholder={t('profileComplete.placeholders.searchCity')}
+                      disabled={isLoading || !selectedRegionId || isLoadingCities}
+                      hasError={!!errors.cityId}
+                      getOptionLabel={(c) => i18n.language === 'ar' ? c.nameAr : c.nameEn}
+                      getOptionValue={(c) => c.id}
+                    />
+                    {errors.cityId && (
+                      <span className="error-text">{errors.cityId}</span>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="form-actions">
                 <button
-                  type="button"
-                  className="btn-skip"
-                  onClick={handleSkip}
-                  disabled={isLoading}
-                >
-                  {t('profileComplete.skipForNow')}
-                </button>
-                <button
                   type="submit"
-                  className={`btn-submit ${isLoading ? 'loading' : ''}`}
+                  className={`btn-submit btn-submit-full ${isLoading ? 'loading' : ''}`}
                   disabled={isLoading}
                 >
                   {isLoading ? (

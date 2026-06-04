@@ -5,6 +5,7 @@ import com.thegamersstation.marketplace.common.exception.ResourceNotFoundExcepti
 import com.thegamersstation.marketplace.messaging.dto.*;
 import com.thegamersstation.marketplace.messaging.entity.Conversation;
 import com.thegamersstation.marketplace.messaging.entity.ConversationParticipantStatus;
+import com.thegamersstation.marketplace.common.util.StringUtil;
 import com.thegamersstation.marketplace.messaging.mapper.ConversationMapper;
 import com.thegamersstation.marketplace.messaging.repository.ConversationParticipantStatusRepository;
 import com.thegamersstation.marketplace.messaging.repository.ConversationRepository;
@@ -21,7 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,12 +63,7 @@ public class ConversationService {
             .findByPostAndSellerAndBuyer(post, post.getOwner(), buyer);
         
         if (existingConversation.isPresent()) {
-            // Send message to existing conversation
-            messageService.sendMessage(
-                existingConversation.get().getId(),
-                SendMessageRequest.builder().content(request.getInitialMessage()).build(),
-                buyerId
-            );
+            // Return existing conversation without sending message
             return getConversation(existingConversation.get().getId(), buyerId);
         }
         
@@ -74,11 +73,11 @@ public class ConversationService {
             .seller(post.getOwner())
             .buyer(buyer)
             .lastMessageAt(LocalDateTime.now())
-            .lastMessagePreview(truncateMessage(request.getInitialMessage()))
+            .lastMessagePreview(StringUtil.truncatePreview(request.getInitialMessage()))
             .build();
         
         conversation = conversationRepository.save(conversation);
-        
+
         // Create participant statuses
         createParticipantStatuses(conversation);
         
@@ -111,10 +110,26 @@ public class ConversationService {
     public ConversationsPageDto getUserConversations(Long userId, Pageable pageable) {
         Page<Conversation> conversationsPage = conversationRepository.findByParticipantId(userId, pageable);
         
+        // Batch fetch unread counts for all conversations in one query
+        List<Long> conversationIds = conversationsPage.getContent().stream()
+            .map(Conversation::getId)
+            .collect(Collectors.toList());
+        
+        Map<Long, Long> unreadCountMap = Map.of();
+        if (!conversationIds.isEmpty()) {
+            unreadCountMap = conversationRepository
+                .countUnreadMessagesByConversationIds(conversationIds, userId)
+                .stream()
+                .collect(Collectors.toMap(
+                    row -> (Long) row[0],
+                    row -> (Long) row[1]
+                ));
+        }
+        
+        Map<Long, Long> finalUnreadCountMap = unreadCountMap;
         Page<ConversationDto> dtoPage = conversationsPage.map(conversation -> {
             ConversationDto dto = conversationMapper.toDto(conversation, userId);
-            long unreadCount = conversationRepository.countUnreadMessages(conversation.getId(), userId);
-            dto.setUnreadCount(unreadCount);
+            dto.setUnreadCount(finalUnreadCountMap.getOrDefault(conversation.getId(), 0L));
             return dto;
         });
         
@@ -156,7 +171,7 @@ public class ConversationService {
     }
     
     void updateLastMessage(Long conversationId, String messagePreview, LocalDateTime timestamp) {
-        conversationRepository.updateLastMessage(conversationId, timestamp, truncateMessage(messagePreview));
+        conversationRepository.updateLastMessage(conversationId, timestamp, StringUtil.truncatePreview(messagePreview));
     }
     
     private void createParticipantStatuses(Conversation conversation) {
@@ -199,8 +214,4 @@ public class ConversationService {
             .orElseThrow(() -> new BusinessRuleException("User is not a participant in this conversation"));
     }
     
-    private String truncateMessage(String message) {
-        if (message == null) return null;
-        return message.length() > 200 ? message.substring(0, 197) + "..." : message;
-    }
 }

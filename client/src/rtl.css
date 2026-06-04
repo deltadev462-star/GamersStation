@@ -1,0 +1,351 @@
+/**
+ * RTL/LTR Bidirectional Layout Foundation
+ * 
+ * This stylesheet provides a centralized foundation for automatic RTL/LTR support.
+ * It uses CSS logical properties that automatically adapt based on the `dir` attribute.
+ * 
+ * Import this file BEFORE component stylesheets in main.jsx
+ */
+
+/* ============================================
+   CSS Logical Properties Reference
+   ============================================
+   Physical → Logical Mapping:
+   
+   margin-left     → margin-inline-start
+   margin-right    → margin-inline-end
+   padding-left    → padding-inline-start
+   padding-right   → padding-inline-end
+   left            → inset-inline-start
+   right           → inset-inline-end
+   border-left     → border-inline-start
+   border-right    → border-inline-end
+   text-align: left  → text-align: start
+   text-align: right → text-align: end
+   ============================================ */
+
+/* ============================================
+   Global Direction Handling
+   ============================================ */
+
+/* Ensure html/body respect dir attribute */
+html[dir="rtl"],
+html[dir="ltr"] {
+  /* Direction is set by i18n.js on language change */
+}
+
+/* ============================================
+   Icon Flipping for RTL
+   ============================================ */
+
+/**
+ * Directional icons (arrows, chevrons, navigation) should flip in RTL
+ * Usage: Add .rtl-flip class to icon wrapper or icon component
+ * 
+ * Example:
+ * <span className="rtl-flip"><ArrowLeft /></span>
+ */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Alternative: Flip inline with animation */
+[dir="rtl"] .rtl-flip-animated {
+  transform: scaleX(-1);
+  transition: transform 0.3s ease;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/* Text Alignment - Use logical values */
+.text-start {
+  text-align: start;
+}
+
+.text-end {
+  text-align: end;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Replace text-left and text-right globally */
+.text-left {
+  text-align: start !important;
+}
+
+.text-right {
+  text-align: end !important;
+}
+
+/* Float - Auto-adapting */
+.float-start {
+  float: inline-start;
+}
+
+.float-end {
+  float: inline-end;
+}
+
+/* Margin - Inline Direction */
+.ms-0 { margin-inline-start: 0 !important; }
+.ms-1 { margin-inline-start: 0.25rem !important; }
+.ms-2 { margin-inline-start: 0.5rem !important; }
+.ms-3 { margin-inline-start: 1rem !important; }
+.ms-4 { margin-inline-start: 1.5rem !important; }
+.ms-5 { margin-inline-start: 3rem !important; }
+
+.me-0 { margin-inline-end: 0 !important; }
+.me-1 { margin-inline-end: 0.25rem !important; }
+.me-2 { margin-inline-end: 0.5rem !important; }
+.me-3 { margin-inline-end: 1rem !important; }
+.me-4 { margin-inline-end: 1.5rem !important; }
+.me-5 { margin-inline-end: 3rem !important; }
+
+.me-auto { margin-inline-end: auto !important; }
+.ms-auto { margin-inline-start: auto !important; }
+
+/* Padding - Inline Direction */
+.ps-0 { padding-inline-start: 0 !important; }
+.ps-1 { padding-inline-start: 0.25rem !important; }
+.ps-2 { padding-inline-start: 0.5rem !important; }
+.ps-3 { padding-inline-start: 1rem !important; }
+.ps-4 { padding-inline-start: 1.5rem !important; }
+.ps-5 { padding-inline-start: 3rem !important; }
+
+.pe-0 { padding-inline-end: 0 !important; }
+.pe-1 { padding-inline-end: 0.25rem !important; }
+.pe-2 { padding-inline-end: 0.5rem !important; }
+.pe-3 { padding-inline-end: 1rem !important; }
+.pe-4 { padding-inline-end: 1.5rem !important; }
+.pe-5 { padding-inline-end: 3rem !important; }
+
+/* Border - Inline Direction */
+.border-start {
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.border-end {
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.border-start-0 {
+  border-inline-start: 0 !important;
+}
+
+.border-end-0 {
+  border-inline-end: 0 !important;
+}
+
+/* ============================================
+   Flexbox Auto-Adaptation
+   ============================================ */
+
+/**
+ * Flexbox automatically reverses in RTL when using flex-direction: row
+ * These utilities help ensure consistent behavior
+ */
+
+.flex-row-rtl {
+  display: flex;
+  flex-direction: row; /* Auto-reverses in RTL */
+}
+
+.flex-row-reverse-rtl {
+  display: flex;
+  flex-direction: row-reverse; /* Auto-reverses in RTL */
+}
+
+/* Justify content with logical values */
+.justify-start {
+  justify-content: flex-start; /* Adapts to direction */
+}
+
+.justify-end {
+  justify-content: flex-end; /* Adapts to direction */
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+/* ============================================
+   Positioning - Logical Properties
+   ============================================ */
+
+/**
+ * Use these classes for absolute/fixed positioning
+ * that should adapt to RTL/LTR
+ */
+
+.inset-inline-start-0 {
+  inset-inline-start: 0;
+}
+
+.inset-inline-end-0 {
+  inset-inline-end: 0;
+}
+
+/* ============================================
+   Common RTL Patterns
+   ============================================ */
+
+/* Dropdown menus - Position based on direction */
+.dropdown-menu-rtl {
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 0; /* Always aligns to the end (right in LTR, left in RTL) */
+  margin-top: 0.5rem;
+}
+
+/* Badge positioning - Always on inline-end */
+.badge-inline-end {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+}
+
+.badge-inline-start {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+}
+
+/* Modal/Dialog centering - No RTL issues */
+.modal-centered {
+  position: fixed;
+  top: 50%;
+  left: 50%; /* Use left/transform for centering (not directional) */
+  transform: translate(-50%, -50%);
+}
+
+/* ============================================
+   Typography Direction Handling
+   ============================================ */
+
+/* Keep specific content LTR regardless of page direction */
+.force-ltr {
+  direction: ltr !important;
+}
+
+/* Keep specific content RTL regardless of page direction */
+.force-rtl {
+  direction: rtl !important;
+}
+
+/* ============================================
+   Grid Auto-Adaptation
+   ============================================ */
+
+/**
+ * CSS Grid doesn't auto-reverse like Flexbox
+ * Use these when you need explicit direction control
+ */
+
+[dir="rtl"] .grid-auto-flow-rtl {
+  grid-auto-flow: dense;
+  direction: rtl;
+}
+
+/* ============================================
+   Animation Considerations
+   ============================================ */
+
+/**
+ * Animations involving translateX should account for direction
+ * Use CSS custom properties for directional animations
+ */
+
+:root {
+  --slide-in-start: -100%;
+  --slide-in-end: 100%;
+}
+
+[dir="rtl"] {
+  --slide-in-start: 100%;
+  --slide-in-end: -100%;
+}
+
+/* Slide animation example */
+@keyframes slideInFromStart {
+  from {
+    transform: translateX(var(--slide-in-start));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToEnd {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(var(--slide-in-end));
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Form Input Direction
+   ============================================ */
+
+/**
+ * Form inputs should respect text direction
+ * but maintain consistent visual alignment
+ */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea {
+  text-align: start;
+}
+
+/* Number inputs should remain LTR */
+input[type="number"] {
+  direction: ltr;
+  text-align: start;
+}
+
+/* ============================================
+   Scrollbar Position
+   ============================================ */
+
+/**
+ * Note: Scrollbar position is handled by browser
+ * Modern browsers auto-position scrollbars based on dir
+ */
+
+/* ============================================
+   Debug Helpers (Remove in production)
+   ============================================ */
+
+/* Uncomment to visualize RTL mode during development */
+/*
+[dir="rtl"] body::before {
+  content: "RTL MODE";
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: #ff6b35;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+  z-index: 99999;
+  font-weight: bold;
+}
+*/

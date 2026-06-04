@@ -2,6 +2,7 @@ package com.thegamersstation.marketplace.post.dto;
 
 import com.thegamersstation.marketplace.post.Post;
 import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -40,5 +41,5 @@ public class CreatePostRequest {
     
     @NotEmpty(message = "At least one image is required")
     @Size(max = 10, message = "Maximum 10 images allowed")
-    private List<String> imageUrls;
+    private List<@Pattern(regexp = "^https?://.*", message = "Each image URL must be a valid HTTP(S) URL") String> imageUrls;
 }

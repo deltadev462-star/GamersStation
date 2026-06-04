@@ -119,6 +119,21 @@
   direction: ltr !important;
 }
 
+.logo-beta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.12);
+  border: 1px solid rgba(255, 107, 53, 0.35);
+  border-radius: 4px;
+  padding: 2px 5px;
+  align-self: flex-start;
+  margin-top: 2px;
+  text-transform: lowercase;
+  line-height: 1;
+}
+
 .header-logo-link:hover .logo-text {
   text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
 }
@@ -180,7 +195,7 @@
 
 .search-icon {
   position: absolute;
-  right: 15px;
+  inset-inline-end: 15px;
   top: 50%;
   transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.4);
@@ -197,8 +212,7 @@
   color: white;
   font-size: 14px;
   transition: all 0.3s ease;
-  text-align: right;
-  direction: rtl;
+  text-align: start;
 }
 
 .search-input::placeholder {
@@ -214,7 +228,36 @@
 /* User Actions */
 .header-actions {
   display: flex;
-  gap: 15px;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Icon-only header buttons — sized to match logo (45px) */
+.header-icon-btn {
+  width: 38px !important;
+  height: 38px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  padding: 0 !important;
+  position: relative;
+}
+
+.header-icon-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.header-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
 }
 
 .action-btn {
@@ -230,13 +273,13 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 
   /* User Button Badge */
   .user-unread-badge {
     position: absolute;
     top: -8px;
-    right: -8px;
+    inset-inline-end: -8px;
     background: #ff6b35;
     color: white;
     font-size: 0.75rem;
@@ -249,14 +292,13 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    animation: pulse 2s infinite;
     z-index: 10;
     border: 2px solid var(--bg-primary, #0f1823);
   }
 
   /* Dropdown Item Badge */
   .dropdown-badge {
-    margin-left: auto;
+    margin-inline-start: auto;
     background: #ff6b35;
     color: white;
     font-size: 0.65rem;
@@ -436,7 +478,7 @@
 
 .mobile-search-icon {
   position: absolute;
-  right: 15px;
+  inset-inline-end: 15px;
   top: 50%;
   transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.4);
@@ -453,8 +495,7 @@
   color: white;
   font-size: 16px;
   transition: all 0.3s ease;
-  text-align: right;
-  direction: rtl;
+  text-align: start;
 }
 
 .mobile-search-input::placeholder {
@@ -480,8 +521,7 @@
   padding: 15px 20px;
   border-radius: 12px;
   transition: all 0.3s ease;
-  text-align: right;
-  direction: rtl;
+  text-align: start;
   position: relative;
 }
 
@@ -494,7 +534,7 @@
 .mobile-nav-link.active {
   background: rgba(255, 107, 53, 0.1);
   color: #ff6b35;
-  border-left: 3px solid #ff6b35;
+  border-inline-start: 3px solid #ff6b35;
 }
 
 /* Mobile User Section */
@@ -522,8 +562,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-align: right;
-  direction: rtl;
+  text-align: end;
 }
 
 .mobile-action-btn:hover {
@@ -534,7 +573,7 @@
 
 .mobile-action-btn span {
   flex: 1;
-  text-align: right;
+  text-align: end;
 }
 
 /* Responsive */
@@ -746,8 +785,7 @@ body.mobile-menu-open {
 .dropdown-menu {
   position: absolute;
   top: 100%;
-  left: auto;
-  right: 0;
+  inset-inline-end: 0;
   margin-top: 0.5rem;
   min-width: 220px;
   max-width: 280px;
@@ -916,30 +954,8 @@ body.mobile-menu-open {
   }
 
   .dropdown-menu {
-    left: auto !important;
-    right: 0 !important;
     min-width: 200px;
   }
 }
 
 
-/* Force dropdown to always appear on the left side to prevent cutoff */
-.dropdown-menu {
-  left: 0 !important;
-  right: auto !important;
-}
-
-/* Keep dropdown items in LTR layout for consistency */
-.dropdown-item {
-  direction: ltr;
-  text-align: left;
-}
-
-[dir="rtl"] .mobile-auth-btn {
-  flex-direction: row-reverse;
-}
-
-/* Ensure auth dropdown stays in place */
-[dir="rtl"] .auth-dropdown {
-  direction: ltr;
-}

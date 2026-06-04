@@ -1,4 +1,8 @@
 spring:
+  datasource:
+    hikari:
+      minimum-idle: 2
+      initialization-fail-timeout: 0
   jpa:
     show-sql: false
   flyway:
@@ -9,21 +13,20 @@ logging:
     root: WARN
     com.thegamersstation.marketplace: INFO
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics
 
-otp:
-  provider: simulated
 messaging:
   ably:
     enabled: true
-
-# Use local storage as fallback in production when S3 fails
-media:
-  storage:
-    local:
-      upload-dir: uploads
-      base-url: http://80.66.87.82/api/v1/uploads
+otp:
+  isEnabled: true

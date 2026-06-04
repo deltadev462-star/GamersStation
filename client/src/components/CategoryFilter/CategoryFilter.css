@@ -123,8 +123,7 @@
   color: white !important;
   border-color: transparent;
   transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
-              0 0 40px rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 .platform-pill-modern.active::before {
@@ -168,6 +167,22 @@
   align-items: center;
   margin-left: 0.25rem;
   animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Colored platform indicator dot */
+.pill-indicator-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+  opacity: 0.9;
+}
+
+.platform-pill-modern.active .pill-indicator-dot {
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 
@@ -243,18 +258,15 @@
   color: white !important;
 }
 
-/* Icon styling in subcategory pills */
-.subcategory-pill svg {
-  opacity: 0.8;
+/* Emoji styling in subcategory pills */
+.pill-emoji {
+  font-size: 1.1rem;
+  line-height: 1;
   transition: transform 0.25s ease;
 }
 
-.subcategory-pill:hover svg {
-  transform: scale(1.1);
-}
-
-.subcategory-pill.active svg {
-  opacity: 1;
+.subcategory-pill:hover .pill-emoji {
+  transform: scale(1.15);
 }
 
 /* Responsive Design */
@@ -276,9 +288,6 @@
   .platform-pills-modern {
     gap: 0.5rem;
     padding-bottom: 0.5rem;
-    /* Add fade effect for scrollable content */
-    mask-image: linear-gradient(to right, transparent, black 10px, black 90%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 10px, black 90%, transparent);
   }
   
   .platform-pill-modern {
@@ -318,9 +327,6 @@
   .platform-pills-modern {
     gap: 0.375rem;
     padding: 0.125rem 0;
-    /* Better fade effect for mobile */
-    mask-image: linear-gradient(to right, transparent, black 5px, black 95%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 5px, black 95%, transparent);
   }
   
   .platform-pill-modern {

@@ -1,0 +1,150 @@
+/* PostTypeToggle Styles - Card Design */
+.post-type-toggle {
+  padding: 14px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.toggle-container {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(22, 28, 42, 0.98);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+  padding: 22px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+.toggle-icon-emoji {
+  font-size: 2.25rem;
+  line-height: 1;
+  display: block;
+  filter: grayscale(0.3);
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.toggle-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.toggle-btn-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+}
+
+.toggle-btn-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.65;
+  line-height: 1.3;
+}
+
+.toggle-btn:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.toggle-btn:hover .toggle-icon-emoji {
+  transform: scale(1.1);
+  filter: grayscale(0);
+}
+
+/* Active state */
+.toggle-btn.active {
+  background: #ff6b35;
+  color: white;
+  box-shadow:
+    0 6px 28px rgba(255, 107, 53, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.toggle-btn.active .toggle-icon-emoji {
+  filter: grayscale(0);
+}
+
+.toggle-btn.active .toggle-btn-subtitle {
+  opacity: 0.85;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .post-type-toggle {
+    padding: 12px 14px;
+  }
+
+  .toggle-btn {
+    min-height: 130px;
+    padding: 18px 12px;
+  }
+
+  .toggle-icon-emoji {
+    font-size: 2rem;
+  }
+
+  .toggle-btn-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-type-toggle {
+    padding: 10px 12px;
+  }
+
+  .toggle-btn {
+    min-height: 120px;
+    padding: 16px 10px;
+    gap: 8px;
+  }
+
+  .toggle-icon-emoji {
+    font-size: 1.75rem;
+  }
+
+  .toggle-btn-title {
+    font-size: 1rem;
+  }
+
+  .toggle-btn-subtitle {
+    font-size: 0.7rem;
+  }
+}
+
+/* Accessibility */
+.toggle-btn:focus-visible {
+  outline: 2px solid var(--primary-color, #ff6b35);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .toggle-btn,
+  .toggle-icon-emoji {
+    transition: none !important;
+  }
+}

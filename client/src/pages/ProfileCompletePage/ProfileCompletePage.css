@@ -236,6 +236,11 @@
   gap: 0.5rem;
 }
 
+.btn-submit-full {
+  width: 100%;
+  flex: 1;
+}
+
 .btn-submit:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 10px 20px -5px rgba(255, 107, 53, 0.4);

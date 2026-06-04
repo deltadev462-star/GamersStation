@@ -10,8 +10,14 @@ import com.thegamersstation.marketplace.city.City;
 import com.thegamersstation.marketplace.city.CityRepository;
 import com.thegamersstation.marketplace.common.exception.ResourceNotFoundException;
 import com.thegamersstation.marketplace.common.util.ContentSanitizer;
+import com.thegamersstation.marketplace.media.MediaService;
+import com.thegamersstation.marketplace.security.SecurityUtil;
 import com.thegamersstation.marketplace.store.Store;
 import com.thegamersstation.marketplace.store.StoreRepository;
+import com.thegamersstation.marketplace.survey.Question;
+import com.thegamersstation.marketplace.survey.QuestionRepository;
+import com.thegamersstation.marketplace.survey.SurveyResponse;
+import com.thegamersstation.marketplace.survey.SurveyResponseRepository;
 import com.thegamersstation.marketplace.user.repository.User;
 import com.thegamersstation.marketplace.user.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import com.thegamersstation.marketplace.common.exception.BusinessRuleException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,72 +48,35 @@ public class PostService {
     private final StoreRepository storeRepository;
     private final PostMapper postMapper;
     private final ContentSanitizer contentSanitizer;
+    private final MediaService mediaService;
+    private final QuestionRepository questionRepository;
+    private final SurveyResponseRepository surveyResponseRepository;
     
     @Transactional
     public PostDto createPost(CreatePostRequest request, Long userId) {
-        log.info("=== CREATE POST DEBUG START ===");
-        log.info("User ID: {}", userId);
-        log.info("Requested Category ID: {}", request.getCategoryId());
-        log.info("Post Type: {}", request.getType());
-        log.info("City ID: {}", request.getCityId());
+        log.info("Creating post for user {} in category {}", userId, request.getCategoryId());
         
         User user = usersRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        log.info("User found: {} ({})", user.getUsername(), user.getPhoneNumber());
-        
-        // Debug: Check if category exists
-        log.info("Attempting to find category with ID: {}", request.getCategoryId());
         Category category = categoryRepository.findById(request.getCategoryId())
-            .orElseThrow(() -> {
-                // Log all available categories for debugging
-                List<Category> allCategories = categoryRepository.findAll();
-                log.error("❌ CATEGORY NOT FOUND - ID: {}", request.getCategoryId());
-                log.error("📊 Total categories in database: {}", allCategories.size());
-                log.error("📋 Available category IDs and names:");
-                allCategories.forEach(cat ->
-                    log.error("   - ID: {} | Name: {} | Slug: {} | Active: {} | Level: {}",
-                        cat.getId(), cat.getNameEn(), cat.getSlug(), cat.getIsActive(), cat.getLevel())
-                );
-                
-                // Check if there are any categories with similar names
-                String requestedIdStr = String.valueOf(request.getCategoryId());
-                log.error("🔍 Searching for categories with names containing 'xbox' or 'nintendo' (case-insensitive):");
-                allCategories.stream()
-                    .filter(cat -> cat.getNameEn().toLowerCase().contains("xbox") ||
-                                   cat.getNameEn().toLowerCase().contains("nintendo") ||
-                                   cat.getSlug().toLowerCase().contains("xbox") ||
-                                   cat.getSlug().toLowerCase().contains("nintendo"))
-                    .forEach(cat -> log.error("   🎮 Found: ID={}, Name={}, Slug={}, Active={}",
-                        cat.getId(), cat.getNameEn(), cat.getSlug(), cat.getIsActive()));
-                
-                return new ResourceNotFoundException(
-                    String.format("Category not found with ID: %d. Available IDs: %s",
-                        request.getCategoryId(),
-                        allCategories.stream()
-                            .map(c -> c.getId().toString())
-                            .limit(20)
-                            .collect(Collectors.joining(", ")))
-                );
-            });
-        
-        log.info("✅ Category found: ID={}, Name={}, Slug={}, Active={}, Level={}",
-            category.getId(), category.getNameEn(), category.getSlug(),
-            category.getIsActive(), category.getLevel());
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
         
         if (!category.getIsActive()) {
-            log.error("❌ Category is INACTIVE: ID={}, Name={}", category.getId(), category.getNameEn());
-            throw new IllegalArgumentException("Category is not active");
+            throw new BusinessRuleException(
+                "Category is not active",
+                "التصنيف غير مفعّل"
+            );
         }
-        
-        log.info("✅ Category is active, proceeding with post creation");
         
         City city = cityRepository.findById(request.getCityId())
             .orElseThrow(() -> new ResourceNotFoundException("City not found"));
         
         // Sanitize content
         String sanitizedTitle = contentSanitizer.sanitize(request.getTitle());
-        String sanitizedDescription = contentSanitizer.sanitize(request.getDescription());
+        String sanitizedDescription = contentSanitizer.maskPhoneNumbers(
+            contentSanitizer.sanitize(request.getDescription())
+        );
         
         // Link to store if user is a store manager
         Store store = null;
@@ -129,12 +100,13 @@ public class PostService {
             .images(new ArrayList<>())
             .build();
         
-        // Add images
+        // Add images with derived thumbnail URLs
         for (int i = 0; i < request.getImageUrls().size(); i++) {
+            String imageUrl = request.getImageUrls().get(i);
             PostImage image = PostImage.builder()
                 .post(post)
-                .url(request.getImageUrls().get(i))
-                .thumbnailUrl(request.getImageUrls().get(i)) // TODO: Generate thumbnails
+                .url(imageUrl)
+                .thumbnailUrl(mediaService.deriveThumbnailUrl(imageUrl))
                 .sortOrder(i)
                 .build();
             post.getImages().add(image);
@@ -154,7 +126,10 @@ public class PostService {
         }
         
         if (post.getStatus() == Post.PostStatus.SOLD || post.getStatus() == Post.PostStatus.BLOCKED) {
-            throw new IllegalStateException("Cannot update Post in current status");
+            throw new BusinessRuleException(
+                "Cannot update post in current status",
+                "لا يمكن تحديث الإعلان في حالته الحالية"
+            );
         }
         
         if (request.getTitle() != null) {
@@ -162,7 +137,9 @@ public class PostService {
         }
         
         if (request.getDescription() != null) {
-            post.setDescription(contentSanitizer.sanitize(request.getDescription()));
+            post.setDescription(contentSanitizer.maskPhoneNumbers(
+                contentSanitizer.sanitize(request.getDescription())
+            ));
         }
         
         if (request.getPrice() != null) {
@@ -188,12 +165,20 @@ public class PostService {
         }
         
         if (request.getImageUrls() != null) {
+            // Remove all existing images (this will trigger cascade delete)
+            List<PostImage> oldImages = new ArrayList<>(post.getImages());
             post.getImages().clear();
+            
+            // Flush to ensure old images are deleted before adding new ones
+            postRepository.flush();
+            
+            // Add new images with derived thumbnail URLs
             for (int i = 0; i < request.getImageUrls().size(); i++) {
+                String imageUrl = request.getImageUrls().get(i);
                 PostImage image = PostImage.builder()
                     .post(post)
-                    .url(request.getImageUrls().get(i))
-                    .thumbnailUrl(request.getImageUrls().get(i))
+                    .url(imageUrl)
+                    .thumbnailUrl(mediaService.deriveThumbnailUrl(imageUrl))
                     .sortOrder(i)
                     .build();
                 post.getImages().add(image);
@@ -209,11 +194,21 @@ public class PostService {
         Post post = postRepository.findByIdAndNotDeleted(adId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
         
-        if (post.getStatus() != Post.PostStatus.ACTIVE) {
-            throw new ResourceNotFoundException("Post not found");
+        if (post.getStatus() == Post.PostStatus.ACTIVE) {
+            return postMapper.toDto(post);
         }
         
-        return postMapper.toDto(post);
+        // Allow owner and admin to view SOLD posts
+        if (post.getStatus() == Post.PostStatus.SOLD) {
+            Long currentUserId = SecurityUtil.getCurrentUserId();
+            boolean isOwner = currentUserId != null && currentUserId.equals(post.getOwner().getId());
+            boolean isAdmin = SecurityUtil.isAdmin();
+            if (isOwner || isAdmin) {
+                return postMapper.toDto(post);
+            }
+        }
+        
+        throw new ResourceNotFoundException("Post not found");
     }
     
     @Transactional(readOnly = true)
@@ -289,7 +284,7 @@ public class PostService {
     }
     
     @Transactional
-    public void markAsSold(Long adId, Long userId) {
+    public void markAsSold(Long adId, Long userId, boolean soldThroughPlatform) {
         Post post = postRepository.findByIdAndNotDeleted(adId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
         
@@ -298,11 +293,25 @@ public class PostService {
         }
         
         if (post.getStatus() != Post.PostStatus.ACTIVE) {
-            throw new IllegalStateException("Only active ads can be marked as sold");
+            throw new BusinessRuleException(
+                "Only active ads can be marked as sold",
+                "يمكن تحديد الإعلانات النشطة فقط كمباعة"
+            );
         }
         
         post.setStatus(Post.PostStatus.SOLD);
         postRepository.save(post);
+        
+        // Save survey response for "Was the product sold through our platform?"
+        Question question = questionRepository.findById(1L)
+            .orElseThrow(() -> new ResourceNotFoundException("Survey question not found"));
+        
+        SurveyResponse response = SurveyResponse.builder()
+            .post(post)
+            .question(question)
+            .responseValue(soldThroughPlatform ? "YES" : "NO")
+            .build();
+        surveyResponseRepository.save(response);
     }
 }
 

@@ -31,6 +31,9 @@ public class UserProfileDto {
     @Schema(description = "City ID", example = "1")
     private Long cityId;
 
+    @Schema(description = "City information")
+    private CityInfo city;
+
     @Schema(description = "User role", example = "USER")
     private User.UserRole role;
 
@@ -55,6 +58,22 @@ public class UserProfileDto {
     @Schema(description = "Social media links")
     @Builder.Default
     private SocialLinksDto socialLinks = new SocialLinksDto();
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "City information")
+    public static class CityInfo {
+        @Schema(description = "City ID", example = "1")
+        private Long id;
+
+        @Schema(description = "City name in English", example = "Riyadh")
+        private String nameEn;
+
+        @Schema(description = "City name in Arabic", example = "الرياض")
+        private String nameAr;
+    }
 
     @Data
     @NoArgsConstructor

@@ -37,12 +37,18 @@ public class StoreService {
         
         // Verify user is a store manager
         if (owner.getRole() != User.UserRole.STORE_MANAGER) {
-            throw new BusinessRuleException("User must be a STORE_MANAGER to own a store");
+            throw new BusinessRuleException(
+                "User must be a STORE_MANAGER to own a store",
+                "يجب أن يكون المستخدم مدير متجر لامتلاك متجر"
+            );
         }
         
         // Check if user already has a store
         if (storeRepository.existsByOwnerId(ownerId)) {
-            throw new BusinessRuleException("User already owns a store");
+            throw new BusinessRuleException(
+                "User already owns a store",
+                "المستخدم يملك متجراً بالفعل"
+            );
         }
         
         // Generate slug if not provided
@@ -53,7 +59,10 @@ public class StoreService {
         
         // Validate slug uniqueness
         if (storeRepository.existsBySlug(slug)) {
-            throw new BusinessRuleException("Slug already exists");
+            throw new BusinessRuleException(
+                "Slug already exists",
+                "هذا الرابط مستخدم بالفعل"
+            );
         }
         
         Store store = Store.builder()
@@ -161,10 +170,8 @@ public class StoreService {
      * List all active stores
      */
     public List<StoreDto> getAllStores() {
-        List<Store> stores = storeRepository.findAll();
-        return storeMapper.toDtoList(stores.stream()
-            .filter(Store::getIsActive)
-            .toList());
+        List<Store> stores = storeRepository.findByIsActiveTrue();
+        return storeMapper.toDtoList(stores);
     }
     
     /**

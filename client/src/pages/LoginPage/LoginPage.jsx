@@ -5,12 +5,15 @@ import { Helmet } from 'react-helmet-async';
 import FormInput from '../../components/FormInput/FormInput';
 import LanguageSwitcher from '../../components/LanguageSwitcher/LanguageSwitcher';
 import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
 import './LoginPage.css';
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, login } = useAuth();
   const [step, setStep] = useState('phone'); // 'phone' or 'otp'
   const [formData, setFormData] = useState({
     phoneNumber: '',
@@ -23,12 +26,11 @@ const LoginPage = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      // Get the redirect location from state or default to home
+    if (isAuthenticated) {
       const redirectTo = location.state?.redirectTo || location.state?.from || '/';
       navigate(redirectTo, { replace: true });
     }
-  }, [navigate, location]);
+  }, [isAuthenticated, navigate, location]);
 
   // Start resend timer
   const startResendTimer = () => {
@@ -103,7 +105,22 @@ const LoginPage = () => {
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
-      setErrors({ phoneNumber: error.message || t('auth.errors.requestOtpFailed') });
+      // Show error notification instead of inline error
+      showError(error);
+      
+      // If rate limited (429), set resend timer to retryAfter value
+      if (error.status === 429 && error.errorJson?.retryAfter) {
+        setResendTimer(error.errorJson.retryAfter);
+        const interval = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
     }
   };
 
@@ -119,7 +136,10 @@ const LoginPage = () => {
     try {
       const formattedPhone = authService.formatPhoneNumber(formData.phoneNumber);
       const response = await authService.verifyOtp(formattedPhone, formData.otp);
-      
+
+      // Update AuthContext state so the rest of the app knows we're logged in
+      login(response);
+
       setIsLoading(false);
       setShowSuccess(true);
       
@@ -140,7 +160,8 @@ const LoginPage = () => {
       }
     } catch (error) {
       setIsLoading(false);
-      setErrors({ otp: error.message || t('auth.errors.verifyOtpFailed') });
+      // Show error notification instead of inline error
+      showError(error);
     }
   };
 
@@ -156,7 +177,22 @@ const LoginPage = () => {
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
-      setErrors({ otp: error.message || t('auth.errors.requestOtpFailed') });
+      // Show error notification instead of inline error
+      showError(error);
+      
+      // If rate limited (429), set resend timer to retryAfter value
+      if (error.status === 429 && error.errorJson?.retryAfter) {
+        setResendTimer(error.errorJson.retryAfter);
+        const interval = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
     }
   };
 

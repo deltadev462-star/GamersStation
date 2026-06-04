@@ -1,21 +1,26 @@
-# Use Node.js alpine image for development
-FROM node:20.19.4-alpine
+# Stage 1: Build the application
+FROM node:20.19.4-alpine AS build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm i --legacy-peer-deps && \
+RUN npm ci --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy the rest of the application
 COPY . .
 
-# Expose the Vite development server port
-EXPOSE 5173
+RUN npm run build
 
-# Start the development server
-CMD ["npm", "run", "dev"]
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+
+# Copy built assets from build stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

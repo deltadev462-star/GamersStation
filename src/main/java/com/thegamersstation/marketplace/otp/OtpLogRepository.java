@@ -1,6 +1,7 @@
 package com.thegamersstation.marketplace.otp;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,4 +32,17 @@ public interface OtpLogRepository extends JpaRepository<OtpLog, Long> {
      */
     @Query("SELECT o FROM OtpLog o WHERE o.phoneNumber = :phone ORDER BY o.attemptedAt DESC LIMIT 1")
     OtpLog findLastAttempt(@Param("phone") String phoneNumber);
+
+    /**
+     * Find a valid (non-expired) OTP for a phone number with matching code
+     */
+    @Query("SELECT o FROM OtpLog o WHERE o.phoneNumber = :phone AND o.code = :code AND o.expiresAt > :now ORDER BY o.attemptedAt DESC LIMIT 1")
+    OtpLog findValidOtp(@Param("phone") String phoneNumber, @Param("code") String code, @Param("now") Instant now);
+
+    /**
+     * Delete expired OTP entries for cleanup
+     */
+    @Modifying
+    @Query("DELETE FROM OtpLog o WHERE o.expiresAt IS NOT NULL AND o.expiresAt < :now")
+    int deleteExpiredOtps(@Param("now") Instant now);
 }

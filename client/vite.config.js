@@ -7,12 +7,10 @@ const removeUnusedCSS = () => {
     name: 'remove-unused-css',
     apply: 'build',
     generateBundle(options, bundle) {
-      // Track all CSS classes used in JS/JSX files
       const usedClasses = new Set()
       const classRegex = /className\s*=\s*["'`]([^"'`]+)["'`]/g
       const dynamicClassRegex = /className\s*=\s*\{[^}]*["'`]([^"'`]+)["'`]/g
-      
-      // Scan all JS files for class names
+
       Object.keys(bundle).forEach(fileName => {
         if (fileName.endsWith('.js')) {
           const chunk = bundle[fileName]
@@ -27,8 +25,7 @@ const removeUnusedCSS = () => {
           }
         }
       })
-      
-      // Add essential classes that might be dynamically added
+
       const essentialClasses = [
         'active', 'disabled', 'error', 'loading', 'success', 'show', 'hide',
         'open', 'closed', 'expanded', 'collapsed', 'animate-in', 'fade-in',
@@ -40,104 +37,69 @@ const removeUnusedCSS = () => {
   }
 }
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react({
-      // Enable Fast Refresh
       fastRefresh: true,
-      // Include JSX runtime for better HMR
       jsxRuntime: 'automatic'
     }),
     removeUnusedCSS()
   ],
-  
-  // Ensure public directory is copied to dist
+
   publicDir: 'public',
-  
+
   server: {
-    // Enable HMR
+    host: true,
+    port: 5173,
+    strictPort: false,
+    // FIX: Allow the Nginx upstream host name
+    allowedHosts: [
+      'client-frontend',
+      'gamers-station.com',
+      'www.gamers-station.com',
+      'thegamersstation.com',
+      'www.thegamersstation.com'
+    ],
     hmr: {
       overlay: true,
       protocol: 'ws',
       host: 'localhost',
-      port: 5174, // Use a different port for HMR websocket to avoid conflicts
+      port: 5174,
       clientPort: 5174
     },
-    // Watch options for better file detection on Windows
     watch: {
       usePolling: true,
       interval: 100
     },
-    // Host configuration
-    host: true,
-    port: 5173,
-    strictPort: false,
-    // Enable response compression
     middlewareMode: false,
-    // Proxy API requests to backend
     proxy: {
       '/api': {
-        target: 'http://80.66.87.82:8080',
+        target: 'http://app:8080', // Use Docker service name 'app'
         changeOrigin: true,
         rewrite: (path) => path,
-        configure: (proxy) => {
-          proxy.on('error', (err) => {
-            // proxy error: err
-          });
-          proxy.on('proxyReq', (proxyReq, req) => {
-            // Sending Request to the Target: req.method, req.url
-          });
-          proxy.on('proxyRes', (proxyRes, req) => {
-            // Received Response from the Target: proxyRes.statusCode, req.url
-          });
-        },
       },
-      // WebSocket proxy configuration
       '/api/v1/ws': {
-        target: 'ws://80.66.87.82:8080',
+        target: 'ws://app:8080', // Use Docker service name 'app'
         ws: true,
         changeOrigin: true,
-        configure: (proxy) => {
-          proxy.on('error', (err) => {
-            // WebSocket proxy error: err
-          });
-          proxy.on('open', () => {
-            // WebSocket connection opened
-          });
-          proxy.on('close', () => {
-            // WebSocket connection closed
-          });
-        },
       }
     }
   },
-  
-  // Optimize dependencies
+
   optimizeDeps: {
     include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'react-helmet-async',
-      'react-i18next',
-      'i18next',
-      'i18next-browser-languagedetector',
-      'i18next-http-backend',
-      'lucide-react'
+      'react', 'react-dom', 'react-router-dom', 'react-helmet-async',
+      'react-i18next', 'i18next', 'i18next-browser-languagedetector',
+      'lucide-react', 'react/jsx-runtime', 'react/jsx-dev-runtime'
     ],
-    exclude: [],
     esbuildOptions: {
-      // Define global variables if needed
       define: {
         global: 'globalThis'
       },
-      // Target modern browsers for smaller builds
-      target: 'es2018'
+      target: 'es2020'
     }
   },
-  
-  // Build configuration
+
   build: {
     target: 'es2018',
     minify: 'terser',
@@ -148,24 +110,20 @@ export default defineConfig({
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.trace'],
         passes: 2
       },
-      mangle: {
-        safari10: true
-      },
-      format: {
-        comments: false
-      }
+      mangle: { safari10: true },
+      format: { comments: false }
     },
-    // Smaller chunks for better caching
     chunkSizeWarningLimit: 500,
     sourcemap: false,
     cssCodeSplit: true,
-    assetsInlineLimit: 4096, // Inline assets smaller than 4kb
+    assetsInlineLimit: 4096,
     rollupOptions: {
       output: {
-        // Disable manual chunking to avoid issues with lucide-react
-        manualChunks: undefined,
-        
-        // Asset naming
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'i18n-vendor': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+          'ui-vendor': ['lucide-react'],
+        },
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.');
           const extType = info[info.length - 1];
@@ -180,26 +138,13 @@ export default defineConfig({
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js'
       },
-      // Tree-shaking
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-        tryCatchDeoptimization: false
-      }
     },
-    // Report compressed size
     reportCompressedSize: true,
-    // Consistent file names for better caching
-    modulePreload: {
-      polyfill: true
-    },
-    // CSS optimization
+    modulePreload: { polyfill: true },
     cssMinify: true,
-    // Additional CSS optimization
     cssTarget: 'chrome80'
   },
-  
-  // CSS configuration
+
   css: {
     devSourcemap: true,
     modules: {
@@ -207,17 +152,10 @@ export default defineConfig({
       generateScopedName: '[name]__[local]___[hash:base64:5]'
     },
     preprocessorOptions: {
-      css: {
-        charset: false
-      }
-    },
-    // PostCSS configuration for CSS optimization
-    postcss: {
-      plugins: []
+      css: { charset: false }
     }
   },
-  
-  // Resolve configuration
+
   resolve: {
     alias: {
       '@': '/src',
@@ -227,10 +165,10 @@ export default defineConfig({
       '@utils': '/src/utils',
       '@assets': '/src/assets'
     },
-    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
+    dedupe: ['react', 'react-dom', 'react-router-dom']
   },
-  
-  // Preview server configuration
+
   preview: {
     port: 4173,
     strictPort: false,

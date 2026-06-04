@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, ArrowRight, Search } from 'lucide-react';
+import { Plus, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/Header/Header';
 // import Hero from '../../components/Hero/Hero';
 import CategoryFilter from '../../components/CategoryFilter/CategoryFilter';
+import LocationFilter from '../../components/LocationFilter/LocationFilter';
+import PostTypeToggle from '../../components/PostTypeToggle/PostTypeToggle';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
 import Footer from '../../components/Footer/Footer';
 import SEO from '../../components/SEO/SEO';
@@ -16,16 +18,10 @@ const LandingPage = () => {
   // State for selected category filter
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [selectedSubcategoryType, setSelectedSubcategoryType] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Handle search submission
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-  
+  const [selectedPostType, setSelectedPostType] = useState('SELL');
+  const [selectedRegionId, setSelectedRegionId] = useState(null);
+  const [selectedCityId, setSelectedCityId] = useState(null);
+
   // Handle category filter change
   const handleCategoryChange = (categoryId, categoryIds) => {
     if (categoryIds) {
@@ -37,6 +33,12 @@ const LandingPage = () => {
       setSelectedCategoryId(categoryId);
       setSelectedSubcategoryType(null);
     }
+  };
+
+  // Handle location filter change
+  const handleLocationChange = ({ regionId, cityId }) => {
+    setSelectedRegionId(regionId);
+    setSelectedCityId(cityId);
   };
   // Structured data for the home page
   const homeStructuredData = {
@@ -77,10 +79,10 @@ const LandingPage = () => {
           "@id": "https://gamersstation.eg/#logo"
         },
         "sameAs": [
-          "https://www.facebook.com/GamersStationApp",
-          "https://www.twitter.com/GamersStationApp",
-          "https://www.instagram.com/GamersStationApp",
-          "https://www.youtube.com/@GamersStationApp"
+          "https://www.facebook.com/GamerStationApp",
+          "https://www.twitter.com/GamerStationApp",
+          "https://www.instagram.com/GamerStationApp",
+          "https://www.youtube.com/@GamerStationApp"
         ],
         "address": {
           "@type": "PostalAddress",
@@ -116,40 +118,34 @@ const LandingPage = () => {
         <Header />
         {/* <Hero /> */}
         
-        {/* Search Bar */}
-        <div className="landing-search-container">
-          <form className="landing-search-form" onSubmit={handleSearchSubmit}>
-            <button type="submit" className="landing-search-btn" aria-label={t('header.search')}>
-              <Search size={20} />
-            </button>
-            <input
-              type="text"
-              className="landing-search-input"
-              placeholder={t('header.searchPlaceholder', 'ابحث عن سلعة')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </form>
-        </div>
+        {/* Post Type Toggle */}
+        <PostTypeToggle
+          selectedType={selectedPostType}
+          onTypeChange={setSelectedPostType}
+        />
         
         <CategoryFilter onFilterChange={handleCategoryChange} />
+        <LocationFilter onFilterChange={handleLocationChange} />
         <main className="main-content">
           <ProductGrid
             categoryId={selectedCategoryId}
             subcategoryType={selectedSubcategoryType}
+            regionId={selectedRegionId}
+            cityId={selectedCityId}
+            postType={selectedPostType}
             hideLoadMore={false}
           />
           
-          {/* Show All Products Button */}
-          <div className="show-all-products-container">
-            <button
-              className="show-all-products-btn"
-              onClick={() => navigate('/products')}
-            >
-              {t('common.showAllProducts', 'Show All Products')}
-              <ArrowRight size={20} className="arrow-icon" />
-            </button>
-          </div>
+          {/*/!* Show All Products Button *!/*/}
+          {/*<div className="show-all-products-container">*/}
+          {/*  <button*/}
+          {/*    className="show-all-products-btn"*/}
+          {/*    onClick={() => navigate('/products')}*/}
+          {/*  >*/}
+          {/*    {t('common.showAllProducts', 'Show All Products')}*/}
+          {/*    <ArrowRight size={20} className="arrow-icon" />*/}
+          {/*  </button>*/}
+          {/*</div>*/}
         </main>
         <Footer />
         

@@ -6,9 +6,11 @@ import { Search, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import ProductGrid from '../../components/ProductGrid/ProductGrid';
+import PostTypeToggle from '../../components/PostTypeToggle/PostTypeToggle';
 import SEO from '../../components/SEO/SEO';
 import categoryService from '../../services/categoryService';
 import cityService from '../../services/cityService';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
 import './AllProductsPage.css';
 
 const AllProductsPage = () => {
@@ -30,7 +32,8 @@ const AllProductsPage = () => {
     maxPrice: searchParams.get('maxPrice') || '',
     condition: searchParams.get('condition') || '',
     sortBy: searchParams.get('sortBy') || 'createdAt',
-    direction: searchParams.get('direction') || 'DESC'
+    direction: searchParams.get('direction') || 'DESC',
+    postType: searchParams.get('postType') || ''
   });
 
   // Expanded sections state
@@ -54,6 +57,7 @@ const AllProductsPage = () => {
         setCities(citiesData);
       } catch (error) {
         console.error('Error loading data:', error);
+        showError(error);
       } finally {
         setLoading(false);
       }
@@ -72,6 +76,7 @@ const AllProductsPage = () => {
     if (filters.condition) params.set('condition', filters.condition);
     if (filters.sortBy !== 'createdAt') params.set('sortBy', filters.sortBy);
     if (filters.direction !== 'DESC') params.set('direction', filters.direction);
+    if (filters.postType) params.set('postType', filters.postType);
     
     setSearchParams(params);
   }, [searchQuery, filters, setSearchParams]);
@@ -98,9 +103,18 @@ const AllProductsPage = () => {
       maxPrice: '',
       condition: '',
       sortBy: 'createdAt',
-      direction: 'DESC'
+      direction: 'DESC',
+      postType: ''
     });
     setSearchQuery('');
+  };
+
+  // Handle post type toggle
+  const handlePostTypeChange = (type) => {
+    setFilters(prev => ({
+      ...prev,
+      postType: type || ''
+    }));
   };
 
   // Toggle section expansion
@@ -112,7 +126,7 @@ const AllProductsPage = () => {
   };
 
   // Count active filters
-  const activeFiltersCount = Object.values(filters).filter(v => v && v !== 'createdAt' && v !== 'DESC').length + (searchQuery ? 1 : 0);
+  const activeFiltersCount = Object.entries(filters).filter(([key, v]) => v && v !== 'createdAt' && v !== 'DESC' && key !== 'postType').length + (searchQuery ? 1 : 0);
 
   // Close filters on mobile when clicking outside
   useEffect(() => {
@@ -154,12 +168,6 @@ const AllProductsPage = () => {
       
       <div className="all-products-page">
         <div className="container">
-          {/* Page Header */}
-          <div className="page-header">
-            <h1 className="page-title">{t('allProducts.title')}</h1>
-            <p className="page-subtitle">{t('allProducts.subtitle')}</p>
-          </div>
-
           {/* Search Bar */}
           <div className="search-section">
             <div className="search-container">
@@ -468,6 +476,7 @@ const AllProductsPage = () => {
                 condition={filters.condition}
                 sortBy={filters.sortBy}
                 direction={filters.direction}
+                postType={filters.postType || null}
               />
             </main>
           </div>

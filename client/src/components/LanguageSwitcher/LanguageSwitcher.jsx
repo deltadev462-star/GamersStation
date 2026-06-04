@@ -36,12 +36,10 @@ const LanguageSwitcher = () => {
       >
         {i18n.language === 'ar' ? (
           <span className="lang-option flag-option">
-            <img src="/flags/fl (2).png" alt="English" className="flag-img" />
             <span className="flag-text">EN</span>
           </span>
         ) : (
           <span className="lang-option flag-option">
-            <img src="/flags/fl (1).png" alt="Arabic" className="flag-img" />
             <span className="flag-text">AR</span>
           </span>
         )}

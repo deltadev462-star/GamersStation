@@ -11,18 +11,21 @@ logging:
     org.springframework.security: DEBUG
     org.flywaydb: INFO
 
-# Dev-specific overrides
 otp:
-  provider: simulated
+  isEnabled: true
+
+# Dev CORS origins
+cors:
+  allowed-origin-patterns: http://localhost:[*],http://localhost:5173,http://localhost:5174,http://localhost:3000
 
 messaging:
   ably:
     enabled: false
 
 # Use local storage in development
-media:
-  storage:
-    provider: local
-    local:
-      upload-dir: uploads
-      base-url: http://80.66.87.82:8080/api/v1/uploads
+#media:
+#  storage:
+#    provider: local
+#    local:
+#      upload-dir: uploads
+#      base-url: http://80.66.87.82:8080/api/v1/uploads

@@ -7,9 +7,53 @@ import FormInput from '../../components/FormInput/FormInput';
 import Footer from '../../components/Footer/Footer';
 import postService from '../../services/postService';
 import cityService from '../../services/cityService';
+import regionService from '../../services/regionService';
 import authService from '../../services/authService';
 import { uploadFile } from '../../config/api';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
+import SearchableSelect from '../../components/SearchableSelect/SearchableSelect';
 import './EditProductPage.css';
+
+// Icon components defined outside to prevent re-creation on every render
+const TitleIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="12" y1="5" x2="12" y2="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const DescriptionIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <line x1="9" y1="17" x2="15" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const PriceIcon = () => (
+  <img
+    src="/images/Saudi_Riyal_Symbol-1.png"
+    alt="Saudi Riyal symbol"
+    style={{ 
+      width: '20px', 
+      height: '20px', 
+      objectFit: 'contain', 
+      display: 'block',
+      filter: 'invert(1) brightness(2)',
+      opacity: '0.7'
+    }}
+    referrerPolicy="no-referrer"
+  />
+);
+
+const LocationIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 const EditProductPage = () => {
   const { t, i18n } = useTranslation();
@@ -23,8 +67,11 @@ const EditProductPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [regions, setRegions] = useState([]);
   const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(true);
+  const [selectedRegionId, setSelectedRegionId] = useState('');
+  const [loadingRegions, setLoadingRegions] = useState(true);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -135,10 +182,19 @@ const EditProductPage = () => {
     }
   ];
 
-  // Fetch cities on mount
+  // Fetch regions on mount
   useEffect(() => {
-    fetchCities();
+    fetchRegions();
   }, []);
+
+  // Fetch cities when region changes
+  useEffect(() => {
+    if (selectedRegionId) {
+      fetchCitiesByRegion(selectedRegionId);
+    } else {
+      setCities([]);
+    }
+  }, [selectedRegionId]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -154,12 +210,26 @@ const EditProductPage = () => {
     }
   }, [id, isAuthenticated]);
 
-  const fetchCities = async () => {
+  const fetchRegions = async () => {
     try {
-      const citiesData = await cityService.getCities();
+      const regionsData = await regionService.getRegions();
+      setRegions(regionsData);
+    } catch (error) {
+      console.error('Error fetching regions:', error);
+      showError(error);
+    } finally {
+      setLoadingRegions(false);
+    }
+  };
+
+  const fetchCitiesByRegion = async (regionId) => {
+    setLoadingCities(true);
+    try {
+      const citiesData = await cityService.getCities(regionId);
       setCities(citiesData);
     } catch (error) {
       console.error('Error fetching cities:', error);
+      showError(error);
     } finally {
       setLoadingCities(false);
     }
@@ -186,9 +256,22 @@ const EditProductPage = () => {
         price: product.price || '',
         condition: product.condition || 'NEW',
         type: product.type || 'SELL',
-        cityId: product.cityId || '',
+        cityId: product.cityId ? String(product.cityId) : '',
         images: product.images || []
       });
+
+      // Pre-select region if city has one - fetch all cities to find match
+      if (product.cityId) {
+        try {
+          const allCities = await cityService.getCities();
+          const matchedCity = allCities.find(c => c.id === product.cityId);
+          if (matchedCity && matchedCity.regionId) {
+            setSelectedRegionId(String(matchedCity.regionId));
+          }
+        } catch (e) {
+          console.error('Error resolving region for city:', e);
+        }
+      }
       
       // Set images
       const imageUrls = product.images?.map(img => img.url) || [];
@@ -209,6 +292,7 @@ const EditProductPage = () => {
       }
     } catch (error) {
       console.error('Error fetching product:', error);
+      showError(error);
       navigate('/profile');
     } finally {
       setLoadingProduct(false);
@@ -265,6 +349,10 @@ const EditProductPage = () => {
       newErrors.price = t('addProduct.errors.priceRequired');
     }
     
+    if (!selectedRegionId) {
+      newErrors.regionId = t('addProduct.errors.regionRequired');
+    }
+
     if (!formData.cityId) {
       newErrors.cityId = t('addProduct.errors.cityRequired');
     }
@@ -312,58 +400,20 @@ const EditProductPage = () => {
       // Show success popup
       setShowSuccessPopup(true);
       
+      // Keep button disabled until redirect
       // Redirect after delay
       setTimeout(() => {
         navigate('/profile');
+        // Only reset after navigation
+        setIsSubmitting(false);
       }, 3000);
     } catch (error) {
       console.error('Error updating post:', error);
-      setErrors({ submit: error.message || t('editProduct.errors.updateFailed') || 'Failed to update product' });
-    } finally {
+      showError(error);
+      // Only reset on error
       setIsSubmitting(false);
     }
   };
-
-  // Icon components
-  const TitleIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <line x1="12" y1="5" x2="12" y2="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-
-  const DescriptionIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <line x1="9" y1="17" x2="15" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-
-  const PriceIcon = () => (
-    <img
-      src="https://www.sama.gov.sa/ar-sa/Currency/SRS/PublishingImages/Saudi_Riyal_Symbol-1.png"
-      alt="Saudi Riyal symbol"
-      style={{ 
-        width: '20px', 
-        height: '20px', 
-        objectFit: 'contain', 
-        display: 'block',
-        filter: 'invert(1) brightness(2)',
-        opacity: '0.7'
-      }}
-      referrerPolicy="no-referrer"
-    />
-  );
-
-  const LocationIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -426,8 +476,7 @@ const EditProductPage = () => {
       setUploadedImages(prev => [...prev, ...newImageUrls]);
     } catch (error) {
       console.error('Error uploading images:', error);
-      // Don't show alert for upload failures - we'll use placeholder images
-      console.warn('Image upload failed, will use placeholder images instead');
+      showError(error);
     } finally {
       setUploadingImage(false);
     }
@@ -463,17 +512,37 @@ const EditProductPage = () => {
             <div className="success-popup">
               <div className="success-popup-icon">
                 <svg className="success-checkmark" viewBox="0 0 52 52">
-                  <circle className="success-checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                  <path className="success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                  <circle
+                    className="success-checkmark-circle"
+                    cx="26"
+                    cy="26"
+                    r="25"
+                    fill="none"
+                  />
+                  <path
+                    className="success-checkmark-check"
+                    fill="none"
+                    d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                  />
                 </svg>
               </div>
-              <h2 className="success-popup-title">{t('editProduct.successTitle') || 'Updated Successfully!'}</h2>
-              <p className="success-popup-message">{t('editProduct.successMessage') || 'Product updated successfully!'}</p>
+              <h2 className="success-popup-title">
+                {t('editProduct.successTitle') || 'Updated Successfully!'}
+              </h2>
+              <p className="success-popup-message">
+                {t('editProduct.successMessage') || 'Product updated successfully!'}
+              </p>
               <div className="success-popup-loader">
                 <span></span>
                 <span></span>
                 <span></span>
               </div>
+              <button
+                className="success-popup-button"
+                onClick={() => navigate('/profile')}
+              >
+                {t('common.goToProfile') || 'Go to Profile'}
+              </button>
             </div>
           </div>
         )}
@@ -678,25 +747,53 @@ const EditProductPage = () => {
                   </div>
 
                   <div className="input-group">
-                    <label htmlFor="cityId">
+                    <label>
+                      <LocationIcon />
+                      {t('addProduct.fields.region')}
+                    </label>
+                    <SearchableSelect
+                      options={regions}
+                      value={selectedRegionId}
+                      onChange={(val) => {
+                        setSelectedRegionId(val);
+                        setFormData((prev) => ({ ...prev, cityId: '' }));
+                        if (errors.regionId) {
+                          setErrors((prev) => ({ ...prev, regionId: '' }));
+                        }
+                      }}
+                      placeholder={t('addProduct.placeholders.selectRegion')}
+                      searchPlaceholder={t('addProduct.placeholders.searchRegion')}
+                      disabled={loadingRegions}
+                      hasError={!!errors.regionId}
+                      getOptionLabel={(r) => i18n.language === 'ar' ? r.nameAr : r.nameEn}
+                      getOptionValue={(r) => r.id}
+                    />
+                    {errors.regionId && (
+                      <span className="field-error">{errors.regionId}</span>
+                    )}
+                  </div>
+
+                  <div className="input-group">
+                    <label>
                       <LocationIcon />
                       {t('addProduct.fields.city')}
                     </label>
-                    <select
-                      id="cityId"
-                      name="cityId"
+                    <SearchableSelect
+                      options={cities}
                       value={formData.cityId}
-                      onChange={handleChange}
-                      className={`select-input ${errors.cityId ? 'has-error' : ''}`}
-                      disabled={loadingCities}
-                    >
-                      <option value="">{t('addProduct.placeholders.selectCity')}</option>
-                      {cities.map(city => (
-                        <option key={city.id} value={city.id}>
-                          {i18n.language === 'ar' ? city.nameAr : city.nameEn}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => {
+                        setFormData((prev) => ({ ...prev, cityId: val }));
+                        if (errors.cityId) {
+                          setErrors((prev) => ({ ...prev, cityId: '' }));
+                        }
+                      }}
+                      placeholder={t('addProduct.placeholders.selectCity')}
+                      searchPlaceholder={t('addProduct.placeholders.searchCity')}
+                      disabled={!selectedRegionId || loadingCities}
+                      hasError={!!errors.cityId}
+                      getOptionLabel={(c) => i18n.language === 'ar' ? c.nameAr : c.nameEn}
+                      getOptionValue={(c) => c.id}
+                    />
                     {errors.cityId && (
                       <span className="field-error">{errors.cityId}</span>
                     )}

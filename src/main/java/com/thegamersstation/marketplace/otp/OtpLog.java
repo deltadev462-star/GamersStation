@@ -26,6 +26,12 @@ public class OtpLog {
     @Column(name = "ip_address", nullable = false, length = 45)
     private String ipAddress;
 
+    @Column(name = "code", length = 10)
+    private String code;
+
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     @Column(name = "success", nullable = false)
     private Boolean success;
 

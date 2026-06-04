@@ -23,6 +23,7 @@ public abstract class PostMapper {
     @Mapping(target = "cityId", source = "city.id")
     @Mapping(target = "cityName", expression = "java(getCityName(post))")
     @Mapping(target = "images", expression = "java(mapImages(post.getImages()))")
+    @Mapping(target = "sold", expression = "java(post.getStatus() == com.thegamersstation.marketplace.post.Post.PostStatus.SOLD)")
     public abstract PostDto toDto(Post post);
     
     @Mapping(target = "id", source = "id")

@@ -69,13 +69,13 @@ export const generateOptimizedUrl = (originalUrl, options = {}) => {
     return `${baseUrl}?${params.toString()}`;
   }
 
-  // For local images, we'll need a server-side image optimization service
-  // This is a placeholder for CDN/image service integration
-  if (originalUrl.startsWith('/') || originalUrl.startsWith('./')) {
-    // TODO: Implement CDN URL generation
+  // CloudFront URLs — already optimized via server-side thumbnail generation.
+  // Return as-is since thumbnails are separate S3 objects (uuid-thumb.jpg).
+  if (originalUrl.includes('cloudfront.net') || originalUrl.includes('amazonaws.com')) {
     return originalUrl;
   }
 
+  // For local images, return as-is
   return originalUrl;
 };
 
@@ -244,7 +244,7 @@ export const generateBlurDataURL = async (imageUrl) => {
 
 // Image loading priority queue
 class ImageLoadingQueue {
-  constructor(concurrency = 3) {
+  constructor(concurrency = 6) {
     this.concurrency = concurrency;
     this.running = 0;
     this.queue = [];

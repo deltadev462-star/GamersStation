@@ -42,7 +42,10 @@ public class PostModerationService {
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
         
         if (post.getStatus() != Post.PostStatus.WAITING_APPROVAL) {
-            throw new IllegalStateException("Only pending posts can be approved");
+            throw new com.thegamersstation.marketplace.common.exception.BusinessRuleException(
+                "Only pending posts can be approved",
+                "يمكن الموافقة فقط على الإعلانات المعلقة"
+            );
         }
         
         post.setStatus(Post.PostStatus.ACTIVE);
@@ -56,7 +59,10 @@ public class PostModerationService {
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
         
         if (post.getStatus() == Post.PostStatus.DELETED) {
-            throw new IllegalStateException("Cannot block deleted post");
+            throw new com.thegamersstation.marketplace.common.exception.BusinessRuleException(
+                "Cannot block deleted post",
+                "لا يمكن حظر إعلان محذوف"
+            );
         }
         
         post.setStatus(Post.PostStatus.BLOCKED);

@@ -19,97 +19,6 @@
   z-index: 0;
 }
 
-/* Landing Page Search Bar */
-.landing-search-container {
-  width: 100%;
-  padding: 30px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-  background: rgba(15, 24, 35, 0.95);
-}
-
-.landing-search-form {
-  width: 100%;
-  max-width: 700px;
-  display: flex;
-  align-items: center;
-  background: rgba(15, 24, 35, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.landing-search-btn {
-  background-color: #ff6b35;
-  border: none;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  height: 48px;
-}
-
-.landing-search-btn:hover {
-  background-color: #ff5722;
-}
-
-.landing-search-btn svg {
-  color: white;
-}
-
-.landing-search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  padding: 12px 16px;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: transparent;
-  height: 48px;
-}
-
-.landing-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 400;
-}
-
-/* RTL support for search bar */
-[dir="rtl"] .landing-search-form {
-  flex-direction: row-reverse;
-}
-
-[dir="rtl"] .landing-search-input {
-  text-align: right;
-}
-
-/* Mobile responsive for search bar */
-@media (max-width: 768px) {
-  .landing-search-container {
-    padding: 20px 15px;
-  }
-  
-  .landing-search-form {
-    max-width: 100%;
-  }
-  
-  .landing-search-btn {
-    padding: 10px 14px;
-    height: 44px;
-  }
-  
-  .landing-search-input {
-    padding: 10px 14px;
-    font-size: 15px;
-    height: 44px;
-  }
-}
-
 .main-content {
   position: relative;
   z-index: 1;
@@ -152,6 +61,14 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
   animation: bounceIn 0.6s ease-out 0.5s both;
+}
+
+/* Hide floating button when modal is open */
+.sort-modal-overlay ~ .floating-add-btn,
+body:has(.sort-modal-overlay) .floating-add-btn {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
 }
 
 .floating-add-btn:hover {

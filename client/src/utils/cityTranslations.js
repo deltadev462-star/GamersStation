@@ -6,3 +6,5 @@ export const getTranslatedCityName = (cityName, t) => {
   const translatedCity = t(`cities.${cityName}`, { defaultValue: cityName });
   return translatedCity;
 };
+
+

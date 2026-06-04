@@ -26,10 +26,11 @@ public class MediaController {
             @RequestParam(value = "folder", defaultValue = "posts") String folder
     ) {
         log.info("Uploading image to folder: {}", folder);
-        String imageUrl = mediaService.uploadImage(file, folder);
+        MediaService.ImageUploadResult result = mediaService.uploadImage(file, folder);
         
         return ResponseEntity.ok(ImageUploadResponseDto.builder()
-                .url(imageUrl)
+                .url(result.url())
+                .thumbnailUrl(result.thumbnailUrl())
                 .filename(file.getOriginalFilename())
                 .size(file.getSize())
                 .contentType(file.getContentType())
@@ -48,9 +49,10 @@ public class MediaController {
         
         List<ImageUploadResponseDto> responses = files.stream()
                 .map(file -> {
-                    String imageUrl = mediaService.uploadImage(file, folder);
+                    MediaService.ImageUploadResult result = mediaService.uploadImage(file, folder);
                     return ImageUploadResponseDto.builder()
-                            .url(imageUrl)
+                            .url(result.url())
+                            .thumbnailUrl(result.thumbnailUrl())
                             .filename(file.getOriginalFilename())
                             .size(file.getSize())
                             .contentType(file.getContentType())

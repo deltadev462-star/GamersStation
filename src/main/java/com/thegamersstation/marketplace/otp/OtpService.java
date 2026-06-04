@@ -9,8 +9,9 @@ public interface OtpService {
      * Send OTP to phone number
      * @param phoneNumber Phone number in E.164 format (+966...)
      * @param ipAddress IP address of the requester
+     * @param language Preferred language for the message (ar or en), defaults to ar if null
      */
-    void sendOtp(String phoneNumber, String ipAddress);
+    void sendOtp(String phoneNumber, String ipAddress, String language);
     
     /**
      * Verify OTP code

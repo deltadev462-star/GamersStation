@@ -36,8 +36,11 @@ import MessagesTab from '../../components/MessagesTab/MessagesTab';
 import authService from '../../services/authService';
 import userService from '../../services/userService';
 import postService from '../../services/postService';
+import MarkAsSoldModal from '../../components/MarkAsSoldModal/MarkAsSoldModal';
 import messagingService from '../../services/messagingService';
+import cityService from '../../services/cityService';
 import { uploadFile } from '../../config/api';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -70,6 +73,9 @@ const ProfilePage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteProductId, setDeleteProductId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [markSoldPostId, setMarkSoldPostId] = useState(null);
 
   // Check authentication
   useEffect(() => {
@@ -103,6 +109,7 @@ const ProfilePage = () => {
           setUserPosts(fetchedPosts);
         } catch (error) {
           console.error('Error fetching user posts:', error);
+          showError(error);
           setUserPosts([]);
         }
         
@@ -120,6 +127,7 @@ const ProfilePage = () => {
         
       } catch (error) {
         console.error('Error fetching user data:', error);
+        showError(error);
       } finally {
         setLoading(false);
       }
@@ -150,6 +158,7 @@ const ProfilePage = () => {
           setUnreadMessagesCount(count);
         } catch (error) {
           console.error('Error fetching unread count:', error);
+          showError(error);
           setUnreadMessagesCount(0);
         }
       }
@@ -178,9 +187,23 @@ const ProfilePage = () => {
   }, []);
 
   // Handle edit mode
-  const handleEdit = () => {
+  const handleEdit = async () => {
     setIsEditing(true);
     setEditedUser({ ...user });
+    
+    // Fetch cities if not already loaded
+    if (cities.length === 0) {
+      try {
+        setLoadingCities(true);
+        const citiesData = await cityService.getCities();
+        setCities(citiesData);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+        showError(error);
+      } finally {
+        setLoadingCities(false);
+      }
+    }
   };
 
   const handleCancelEdit = () => {
@@ -209,9 +232,9 @@ const ProfilePage = () => {
         updateData.email = editedUser.email || null;
       }
       
-      // Include cityId only if user doesn't have one yet (for profile completion)
-      if (!user.cityId && editedUser.cityId) {
-        updateData.cityId = editedUser.cityId;
+      // Allow updating cityId anytime
+      if (editedUser.cityId && editedUser.cityId !== user.cityId) {
+        updateData.cityId = parseInt(editedUser.cityId);
       }
       
       // If there's a new profile image URL, add it to the update data (only allow http/https)
@@ -241,10 +264,7 @@ const ProfilePage = () => {
       setShowSuccessPopup(true);
     } catch (error) {
       console.error('Error updating profile:', error);
-      // Show error popup
-      setPopupTitle(t('profile.updateErrorTitle') || 'Update Failed');
-      setPopupMessage(t('profile.updateError') || 'Failed to update profile. Please try again.');
-      setShowSuccessPopup(true);
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -323,7 +343,8 @@ const ProfilePage = () => {
     return date.toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'Asia/Riyadh'
     });
   };
 
@@ -348,10 +369,7 @@ const ProfilePage = () => {
       setDeleteProductId(null);
     } catch (error) {
       console.error('Error deleting product:', error);
-      // Show error popup
-      setPopupTitle(t('profile.deleteErrorTitle') || 'Delete Failed');
-      setPopupMessage(t('profile.deleteError') || 'Failed to delete product. Please try again.');
-      setShowSuccessPopup(true);
+      showError(error);
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
@@ -359,7 +377,18 @@ const ProfilePage = () => {
   };
 
   if (loading) {
-    return <PageLoader message={t('common.loading')} />;
+    return (
+      <>
+        <Header />
+        <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '900px', padding: '20px' }}>
+            <div className="skeleton" style={{ height: '200px', borderRadius: '16px', marginBottom: '24px' }} />
+            <div className="skeleton" style={{ height: '80px', borderRadius: '12px', marginBottom: '16px' }} />
+            <div className="skeleton" style={{ height: '400px', borderRadius: '12px' }} />
+          </div>
+        </main>
+      </>
+    );
   }
 
   // If no user data, show error
@@ -467,8 +496,28 @@ const ProfilePage = () => {
                       onChange={(e) => handleInputChange('username', e.target.value)}
                       placeholder={t('profile.username')}
                     />
+                    <input
+                      type="email"
+                      className="edit-input email-input"
+                      value={editedUser.email || ''}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder={t('profile.email') || 'Email'}
+                    />
+                    <select
+                      className="edit-input city-select"
+                      value={editedUser.cityId || ''}
+                      onChange={(e) => handleInputChange('cityId', e.target.value)}
+                      disabled={loadingCities}
+                    >
+                      <option value="">{t('profile.selectCity') || 'Select City'}</option>
+                      {cities.map(city => (
+                        <option key={city.id} value={city.id}>
+                          {i18n.language === 'ar' ? city.nameAr : city.nameEn}
+                        </option>
+                      ))}
+                    </select>
                     <div className="edit-actions">
-                      <button className="save-btn" onClick={handleSaveProfile} disabled={avatarUploading || backgroundUploading}>
+                      <button className="save-btn" onClick={handleSaveProfile} disabled={avatarUploading || backgroundUploading || loadingCities}>
                         <Save size={16} />
                         {t('profile.save')}
                       </button>
@@ -481,10 +530,16 @@ const ProfilePage = () => {
                 ) : (
                   <>
                     <h1 className="profile-username">{user?.username || t('profile.anonymous')}</h1>
+                    {user?.phoneNumber && (
+                      <div className="profile-phone">
+                        <Phone size={16} />
+                        <span>{user.phoneNumber.replace(/^\+?966/, '0').replace(/\+$/, '')}</span>
+                      </div>
+                    )}
                     <div className="profile-meta">
                       <span className="meta-item">
                         <MapPin size={16} />
-                        {user?.city || t('profile.noLocation')}
+                        {user?.city ? (i18n.language === 'ar' ? user.city.nameAr : user.city.nameEn) : t('profile.noLocation')}
                       </span>
                       <span className="meta-item">
                         <Calendar size={16} />
@@ -540,13 +595,13 @@ const ProfilePage = () => {
                 {userPosts.length > 0 ? (
                   <div className="user-posts-list list-view">
                     {userPosts.map(post => (
-                      <div key={post.id} className="user-post-item" onClick={() => navigate(`/product/${post.id}`)}>
+                      <div key={post.id} className={`user-post-item ${post.status === 'SOLD' ? 'post-item-sold' : ''}`} onClick={() => post.status !== 'SOLD' && navigate(`/product/${post.id}`)}>
                         <div className="post-item-image">
                           <img src={post.images?.[0]?.url || `https://via.placeholder.com/150x150/1a1f36/ff6b35?text=${encodeURIComponent(post.title)}`} alt={post.title} />
+                          {post.status === 'SOLD' && (
+                            <div className="post-item-sold-badge">{t('markAsSold.soldBadge')}</div>
+                          )}
                         </div>
-                          {/* <div className="post-type-badge">
-                            {post.type === 'SELL' ? t('productType.forSale') : t('productType.wanted')}
-                          </div> */}
                         <div className="post-item-content">
                           <div className="post-item-header">
                             <h3 className="post-item-title">{post.title}</h3>
@@ -571,7 +626,7 @@ const ProfilePage = () => {
                             <div className="detail-item">
                                
                                   <HandCoins  size={14} />
-                              <span>{t('currency')} {post.price}</span>
+                              <span>{t('currency')} {Number(post.price || 0).toLocaleString()}</span>
                             </div>
                             <div className="detail-item">
                               <MapPin size={14} />
@@ -583,31 +638,48 @@ const ProfilePage = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="post-item-actions">
-                          <button
-                            className="post-action-btn edit-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/edit-product/${post.id}`);
-                            }}
-                            title={t('profile.editProduct')}
-                          >
-                            <Edit size={18} />
-                            <span>{t('common.edit')}</span>
-                          </button>
-                          <button
-                            className="post-action-btn delete-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteProductId(post.id);
-                              setShowDeleteModal(true);
-                            }}
-                            title={t('profile.deleteProduct')}
-                          >
-                            <Trash2 size={18} />
-                            <span>{t('common.delete')}</span>
-                          </button>
-                        </div>
+                        {post.status !== 'SOLD' ? (
+                          <div className="post-item-actions">
+                            <button
+                              className="post-action-btn edit-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/edit-product/${post.id}`);
+                              }}
+                              title={t('profile.editProduct')}
+                            >
+                              <Edit size={18} />
+                              <span>{t('common.edit')}</span>
+                            </button>
+                            <button
+                              className="post-action-btn mark-sold-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMarkSoldPostId(post.id);
+                              }}
+                              title={t('markAsSold.button')}
+                            >
+                              <Package size={18} />
+                              <span>{t('markAsSold.button')}</span>
+                            </button>
+                            <button
+                              className="post-action-btn delete-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteProductId(post.id);
+                                setShowDeleteModal(true);
+                              }}
+                              title={t('profile.deleteProduct')}
+                            >
+                              <Trash2 size={18} />
+                              <span>{t('common.delete')}</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="post-item-actions">
+                            <span className="post-sold-label">{t('markAsSold.soldBadge')}</span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -739,6 +811,23 @@ const ProfilePage = () => {
         autoCloseDelay={3000}
       />
       
+      {/* Mark as Sold Modal */}
+      {markSoldPostId && (
+        <MarkAsSoldModal
+          postId={markSoldPostId}
+          onClose={() => setMarkSoldPostId(null)}
+          onSuccess={async () => {
+            // Refresh posts list
+            try {
+              const posts = await postService.getMyPosts({ size: 20 });
+              setUserPosts(posts.content || []);
+            } catch (error) {
+              console.error('Error refreshing posts:', error);
+            }
+          }}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>

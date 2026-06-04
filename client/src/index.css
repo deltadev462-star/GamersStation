@@ -267,11 +267,11 @@ p {
 }
 
 .text-right {
-  text-align: right;
+  text-align: end;
 }
 
 .text-left {
-  text-align: left;
+  text-align: start;
 }
 
 /* Responsive Breakpoints */

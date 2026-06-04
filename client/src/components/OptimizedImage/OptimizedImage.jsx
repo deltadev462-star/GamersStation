@@ -161,11 +161,13 @@ const OptimizedImage = memo(({
             }
           };
 
-          img.onerror = () => {
+          img.onerror = (err) => {
             if (!loadTask.cancel) {
+              // Silently handle CORS and network errors
+              console.debug('Image load failed (CORS or network):', src);
               setError(true);
               setImageLoaded(false);
-              if (onError) onError();
+              if (onError) onError(err);
               reject();
             }
           };
@@ -254,12 +256,14 @@ const OptimizedImage = memo(({
   }, [src, priority, loading, loadImage, formatSupport]);
 
   // Handle native image error (fallback)
-  const handleError = () => {
+  const handleError = (err) => {
     if (!error) {
+      // Silently handle CORS and network errors
+      console.debug('Image error caught:', err);
       setImageSrc(placeholder || '/placeholder-game.jpg');
       setError(true);
       setImageLoaded(false);
-      if (onError) onError();
+      if (onError) onError(err);
     }
   };
 

@@ -1,8 +1,8 @@
 // Dynamic Sitemap Generator Utility
 // This utility generates sitemaps dynamically based on actual data from the API
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://api.gamersstation.eg';
-const SITE_URL = 'https://gamersstation.eg';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://gamers-station.com/api/v1';
+const SITE_URL = 'https://gamers-station.com';
 
 // Priority mapping for different page types
 const PRIORITY_MAP = {

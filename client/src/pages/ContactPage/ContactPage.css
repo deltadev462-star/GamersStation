@@ -405,53 +405,57 @@ textarea {
 
 .info-item {
   display: flex;
-  justify-content: space-between;
-  /* align-items: flex-start; */
-  gap: 5px;
+  align-items: center;
+  gap: 14px;
+  text-align: start;
 }
- .emaila{
-  font-size: 12px;
- }
 
-.info {
-  width: 5px;
-  height: clamp(28px, 5vw, 36px);
+.info-icon-box {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   background: linear-gradient(135deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 107, 53, 0.1) 100%);
   border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: 8px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.info svg {
+.info-icon-box svg {
   color: #ff6b35;
-  width: 60%;
-  height: 60%;
+  width: 20px;
+  height: 20px;
 }
 
 .info-content {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .info-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  text-transform: none;
 }
 
- 
+.info-content a,
 .info-content span {
   color: var(--text-primary);
   font-size: 0.95rem;
+  word-break: break-all;
 }
 
 .info-content a {
+  text-decoration: none;
   transition: color 0.3s ease;
+  direction: ltr;
+  text-align: right;
 }
 
 .info-content a:hover {
@@ -613,13 +617,15 @@ textarea {
     gap: 15px;
   }
 
-  .info {
-    width: 3px;
-    height: 30px;
+  .info-icon-box {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 10px;
   }
 
   .info-content {
-    gap: 3px;
+    gap: 2px;
   }
 
   .info-label {
@@ -761,10 +767,11 @@ textarea {
     gap: 12px;
   }
 
-  .info {
-    width: 6px;
-    height: 26px;
-    border-radius: 6px;
+  .info-icon-box {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 10px;
   }
 
   .info-label {

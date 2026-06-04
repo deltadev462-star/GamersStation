@@ -1084,6 +1084,7 @@
   color: var(--text-secondary);
   margin-bottom: 2rem;
   line-height: 1.6;
+  text-align: center;
 }
 
 .success-popup-loader {
@@ -1198,5 +1199,5 @@
 /* RTL Support for Success Popup */
 :root[dir="rtl"] .success-popup-message {
   direction: rtl;
-  text-align: right;
+  text-align: center;
 }

@@ -15,7 +15,10 @@ import {
   User,
   Check,
   Package,
-  Gamepad2
+  Gamepad2,
+  Maximize2,
+  Camera,
+  Tag
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -26,6 +29,8 @@ import authService from '../../services/authService';
 import OptimizedImage from '../../components/OptimizedImage/OptimizedImage';
 import userService from '../../services/userService';
 import { getTranslatedCityName } from '../../utils/cityTranslations';
+import { showError } from '../../components/ErrorNotification/ErrorNotification';
+import MarkAsSoldModal from '../../components/MarkAsSoldModal/MarkAsSoldModal';
 import './ProductDetailsPage.css';
 
 const ProductDetailsPage = () => {
@@ -42,6 +47,10 @@ const ProductDetailsPage = () => {
   const [postType, setPostType] = useState(null);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [sellerDetails, setSellerDetails] = useState(null);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState(false);
+  const [sellerAdCount, setSellerAdCount] = useState(0);
+  const [showMarkSoldModal, setShowMarkSoldModal] = useState(false);
 
   useEffect(() => {
     fetchProductDetails();
@@ -64,8 +73,6 @@ const ProductDetailsPage = () => {
         name: postData.localizedTitle?.[currentLang] || postData.title || 'Untitled Product',
         arabicName: postData.localizedTitle?.ar || postData.title || 'منتج بدون اسم',
         price: postData.price || 0,
-        originalPrice: postData.price ? Math.round(postData.price * 1.15) : 0, // Add 15% as original price
-        discount: 14, // Calculate discount percentage
         sold: Math.floor(Math.random() * 1000) + 100,
         availability: postData.status === 'ACTIVE' ? t('pages.productDetails.available') : t('pages.productDetails.unavailable'),
         brand: 'GamersStation',
@@ -93,7 +100,7 @@ const ProductDetailsPage = () => {
             }
           })(),
           [t('pages.productDetails.city')]: getTranslatedCityName(postData.cityName, t),
-          [t('pages.productDetails.publishDate')]: new Date(postData.createdAt).toLocaleDateString(currentLang === 'ar' ? 'ar-SA' : 'en-US'),
+          [t('pages.productDetails.publishDate')]: new Date(postData.createdAt).toLocaleDateString(currentLang === 'ar' ? 'ar-SA' : 'en-US', { timeZone: 'Asia/Riyadh' }),
           [t('pages.productDetails.adNumber')]: postData.id,
           [t('pages.productDetails.views')]: postData.viewCount || 0,
         },
@@ -116,8 +123,21 @@ const ProductDetailsPage = () => {
             storeName: userData.storeName,
             username: userData.username,
             name: userData.name || userData.username || (currentLang === 'ar' ? 'مجهول' : 'Anonymous'),
-            city: getTranslatedCityName(userData.cityName || postData.cityName, t)
+            city: getTranslatedCityName(userData.cityName || postData.cityName, t),
+            memberSince: userData.createdAt
           });
+          
+          // Try to fetch seller's ad count
+          try {
+            const sellerPosts = await postService.getPosts({
+              ownerId: postData.ownerId,
+              page: 0,
+              size: 1
+            });
+            setSellerAdCount(sellerPosts?.totalElements || 0);
+          } catch {
+            // Could not fetch ad count
+          }
         } catch {
           // Could not fetch seller details
         }
@@ -183,8 +203,10 @@ const ProductDetailsPage = () => {
         
       setRelatedProducts(transformedRelated);
       
-    } catch {
+    } catch (error) {
+      console.error('Error fetching product details:', error);
       setError(t('common.error'));
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -215,6 +237,16 @@ const ProductDetailsPage = () => {
 
   const handleImageSelect = (index) => {
     setSelectedImage(index);
+  };
+
+  const getImageCountText = (count) => {
+    if (currentLang === 'ar') {
+      if (count === 1) return t('pages.productDetails.onePhoto');
+      if (count === 2) return t('pages.productDetails.twoPhotos');
+      if (count >= 3 && count <= 10) return t('pages.productDetails.multiplePhotos', { count });
+      return t('pages.productDetails.manyPhotos', { count });
+    }
+    return count === 1 ? t('pages.productDetails.onePhoto') : t('pages.productDetails.multiplePhotos', { count });
   };
 
   if (loading) {
@@ -290,216 +322,281 @@ const ProductDetailsPage = () => {
         <div className="gaming-bg-pattern"></div>
         
         <div className="container">
-          {/* Breadcrumb */}
-          <div className="gaming-breadcrumb">
-            <a href="/">{t('pages.productDetails.home')}</a>
+          {/* Product Content - Responsive Layout */}
+          <div className="product-content-wrapper">
             
-            <ChevronLeft className="breadcrumb-arrow" size={16} />
-            <span className="current-page">{i18n.language === 'ar' ? product.arabicName : product.name}</span>
-          </div>
-
-          {/* Main Product Card */}
-          <div className="product-main-card">
-            <div className="card-glow"></div>
-            
-            {/* Product Gallery Section (Left Side) */}
-            <div className="product-gallery-section">
-              {/* Thumbnails sidebar - vertical strip */}
-              <div className="thumbnails-sidebar">
-                {product.images.map((image, index) => (
-                  <button
-                    key={index}
-                    className={`thumbnail-button ${selectedImage === index ? 'active' : ''}`}
-                    onClick={() => handleImageSelect(index)}
-                    aria-label={`View image ${index + 1}`}
-                  >
-                    {image.startsWith('http') ? (
-                      <img
-                        src={image}
-                        alt={`${product.name} ${index + 1}`}
-                        className="thumbnail-img"
-                      />
-                    ) : (
-                      <Gamepad2 size={30} />
-                    )}
-                  </button>
-                ))}
+            {/* Left Column - Images & Description */}
+            <div className="product-left-column">
+              {/* Image Section */}
+              <div className="product-image-section">
+              {/* Type Badge */}
+              <div className={`image-badge type-badge ${postType === 'ASK' ? 'badge-ask' : 'badge-sell'}`}>
+                {postType === 'ASK' ? (
+                  <>
+                    <Package size={18} />
+                    <span>{currentLang === 'ar' ? 'مطلوب' : 'Wanted'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} />
+                    <span>{currentLang === 'ar' ? 'للبيع' : 'For Sale'}</span>
+                  </>
+                )}
               </div>
-              
-              {/* Main image */}
-              <div className="main-image-wrapper">
-                <div className={`image-badge type-badge ${postType === 'ASK' ? 'badge-ask' : 'badge-sell'}`}>
-                  {postType === 'ASK' ? (
-                    <>
-                      <Package size={20} />
-                      <span>{currentLang === 'ar' ? 'مطلوب' : 'Wanted'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check size={20} />
-                      <span>{currentLang === 'ar' ? 'للبيع' : 'For Sale'}</span>
-                    </>
-                  )}
-                </div>
-                
-                <div className="main-product-image">
-                  {product.images[selectedImage].startsWith('http') ? (
-                    <OptimizedImage
-                      src={product.images[selectedImage]}
-                      alt={product.name}
-                      className="product-img"
-                      priority={true}
-                      objectFit="contain"
+
+              {/* Main Image */}
+              <div className="main-product-image">
+                {product.images[selectedImage].startsWith('http') ? (
+                  <OptimizedImage
+                    src={product.images[selectedImage]}
+                    alt={product.name}
+                    className="product-img"
+                    priority={true}
+                    objectFit="contain"
+                  />
+                ) : (
+                  <div className="product-icon-wrapper">
+                    <Gamepad2 size={120} className="product-icon" />
+                  </div>
+                )}
+              </div>
+
+              {/* Image Count Badge */}
+              <div className="image-count-badge">
+                <Camera size={16} />
+                <span>{getImageCountText(product.images.filter(img => img.startsWith('http')).length || product.images.length)}</span>
+              </div>
+
+              {/* Expand Button */}
+              <button
+                className="expand-image-btn"
+                onClick={() => setFullscreenImage(true)}
+                aria-label="Expand image"
+              >
+                <Maximize2 size={18} />
+              </button>
+            </div>
+
+            {/* Thumbnails - Horizontal */}
+            <div className="thumbnails-horizontal">
+              {product.images.map((image, index) => (
+                <button
+                  key={index}
+                  className={`thumbnail-button ${selectedImage === index ? 'active' : ''}`}
+                  onClick={() => handleImageSelect(index)}
+                  aria-label={`View image ${index + 1}`}
+                >
+                  {image.startsWith('http') ? (
+                    <img
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="thumbnail-img"
                     />
                   ) : (
-                    <div className="product-icon-wrapper">
-                      <Gamepad2 size={120} className="product-icon" />
-                    </div>
+                    <Gamepad2 size={28} />
                   )}
+                </button>
+              ))}
+            </div>
+
+            {/* Product Title & Description */}
+            <div className="product-header-info">
+              <h1 className="product-title">{product.name}</h1>
+              <p className="product-brief">{product.description}</p>
+            </div>
+            </div>
+            {/* End Left Column */}
+            
+            {/* Right Sidebar - Price, Info, Seller, Action */}
+            <div className="product-right-sidebar">
+            
+            {/* Price Card */}
+            <div className="price-card">
+              <div className="price-card-actions">
+                <button
+                  className="price-action-btn"
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  aria-label={t('pages.productDetails.share')}
+                >
+                  <Share2 size={20} />
+                </button>
+                {showShareMenu && (
+                  <div className="share-menu price-share-menu">
+                    <button onClick={() => handleShare('whatsapp')}>WhatsApp</button>
+                    <button onClick={() => handleShare('facebook')}>Facebook</button>
+                    <button onClick={() => handleShare('copy')}>{t('pages.productDetails.copyLink')}</button>
+                  </div>
+                )}
+                <button
+                  className={`price-action-btn ${isWishlisted ? 'active' : ''}`}
+                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  aria-label={t('pages.productDetails.addToWishlist')}
+                >
+                  <Heart size={20} fill={isWishlisted ? '#ff6b35' : 'none'} />
+                </button>
+              </div>
+              <div className="price-card-info">
+                <span className="price-label">{t('pages.productDetails.askingPrice')}</span>
+                <div className="price-value-row">
+                  <span className="price-amount">{product.price.toLocaleString()}</span>
+                  <span className="currency-symbol">{t('currency')}</span>
                 </div>
               </div>
             </div>
 
-            {/* Product Info Section (Right Side) */}
-            <div className="product-info-section">
-              <div className="product-header-info">
-                <h1 className="product-title">{product.name}</h1>
-                {product.arabicName && product.arabicName !== product.name && (
-                  <h2 className="product-arabic-title">{product.arabicName}</h2>
-                )}
-                <p className="product-brief">{product.description}</p>
+            {/* Info Cards Row - 2x2 Grid */}
+            <div className="info-cards-row">
+              <div className="info-card">
+                <div className="info-card-icon condition-icon">
+                  <Shield size={24} />
+                </div>
+                <span className="info-card-label">{t('pages.productDetails.condition.label')}</span>
+                <span className="info-card-value">{product.specifications[t('pages.productDetails.condition.label')]}</span>
               </div>
-
-              {/* Price Display */}
-              <div className="price-display">
-                <div className="price-info">
-                  <span className="currency-symbol">{t('currency')}</span>
-                  <span className="price-amount">{product.price.toLocaleString()}</span>
+              <div className="info-card">
+                <div className="info-card-icon location-icon">
+                  <MapPin size={24} />
                 </div>
-                {product.originalPrice > product.price && (
-                  <div className="original-price">
-                    <span>{product.originalPrice} {t('currency')}</span>
-                    <span className="discount-badge">-{product.discount}%</span>
-                  </div>
-                )}
+                <span className="info-card-label">{t('pages.productDetails.location')}</span>
+                <span className="info-card-value">{product.specifications[t('pages.productDetails.city')]}</span>
               </div>
-
-              {/* Quick Info Grid */}
-              <div className="quick-info-grid">
-                <div className="info-item">
-                  <Shield className="info-icon" />
-                  <div>
-                    <span className="info-label">{t('pages.productDetails.condition.label')}</span>
-                    <span className="info-value">{product.specifications[t('pages.productDetails.condition.label')]}</span>
-                  </div>
+              <div className="info-card">
+                <div className="info-card-icon category-icon">
+                  <Tag size={24} />
                 </div>
-                <div className="info-item">
-                  <MapPin className="info-icon" />
-                  <div>
-                    <span className="info-label">{t('pages.productDetails.location')}</span>
-                    <span className="info-value">{product.specifications[t('pages.productDetails.city')]}</span>
-                  </div>
-                </div>
-                <div className="info-item">
-                  <Calendar className="info-icon" />
-                  <div>
-                    <span className="info-label">{t('pages.productDetails.posted')}</span>
-                    <span className="info-value">{product.specifications[t('pages.productDetails.publishDate')]}</span>
-                  </div>
-                </div>
-                <div className="info-item">
-                  <Package className="info-icon" />
-                  <div>
-                    <span className="info-label">{t('pages.productDetails.adNumber')}</span>
-                    <span className="info-value">#{product.specifications[t('pages.productDetails.adNumber')]}</span>
-                  </div>
-                </div>
+                <span className="info-card-label">{currentLang === 'ar' ? 'الفئة' : 'Category'}</span>
+                <span className="info-card-value">{product.category}</span>
               </div>
-  {/* </div> */}
+              <div className="info-card">
+                <div className="info-card-icon date-icon">
+                  <Calendar size={24} />
+                </div>
+                <span className="info-card-label">{t('pages.productDetails.publishDate')}</span>
+                <span className="info-card-value">{product.specifications[t('pages.productDetails.publishDate')]}</span>
+              </div>
+            </div>
 
-              {/* Seller Information Card */}
-              <div className="seller-info-card">
-                <div className="seller-header">
-                  <div className="seller-avatar">
-                    {(sellerDetails?.avatar || product.seller.verified) ? (
-                      sellerDetails?.avatar ? (
-                        <OptimizedImage
-                          src={sellerDetails.avatar}
-                          alt={product.seller.name}
-                          className="seller-avatar-img"
-                          objectFit="cover"
-                        />
-                      ) : (
-                        <User size={32} className="seller-avatar-icon" />
-                      )
+            {/* Seller Information Card */}
+            <div className="seller-info-card">
+              <div className="seller-header">
+                <div className="seller-avatar">
+                  {(sellerDetails?.avatar || product.seller.verified) ? (
+                    sellerDetails?.avatar ? (
+                      <OptimizedImage
+                        src={sellerDetails.avatar}
+                        alt={product.seller.name}
+                        className="seller-avatar-img"
+                        objectFit="cover"
+                      />
                     ) : (
                       <User size={32} className="seller-avatar-icon" />
-                    )}
-                    {product.seller.verified && (
-                      <div className="verified-badge" title={t('pages.productDetails.verifiedSeller')}>
-                        <Check size={12} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="seller-details">
-                    <h3 className="seller-name">{sellerDetails?.name || product.seller.name}</h3>
-                    <div className="seller-location">
-                      <MapPin size={14} />
-                      <span>{product.seller.city}</span>
+                    )
+                  ) : (
+                    <User size={32} className="seller-avatar-icon" />
+                  )}
+                  {product.seller.verified && (
+                    <div className="verified-badge" title={t('pages.productDetails.verifiedSeller')}>
+                      <Check size={12} />
                     </div>
+                  )}
+                </div>
+                <div className="seller-details">
+                  <h3 className="seller-name">{sellerDetails?.name || product.seller.name}</h3>
+                  <div className="seller-location">
+                    <MapPin size={14} />
+                    <span>{product.seller.city}</span>
                   </div>
                 </div>
               </div>
+              
+              {/* Seller Info Badges */}
+              <div className="seller-badges">
+                {sellerDetails?.memberSince && (
+                  <div className="seller-badge">
+                    <Calendar size={14} />
+                    <span>
+                      {currentLang === 'ar' ? 'عضو منذ' : 'Member since'} {new Date(sellerDetails.memberSince).getFullYear()}
+                    </span>
+                  </div>
+                )}
+                {sellerAdCount > 0 && (
+                  <div className="seller-badge seller-badge-count">
+                    <Package size={14} />
+                    <span>
+                      <strong>{sellerAdCount}</strong> {currentLang === 'ar' ? 'إعلان' : 'Ads'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="action-section">
+            {/* Action Buttons */}
+            <div className="action-section">
+              {(() => {
+                const currentUser = authService.getCurrentUser();
+                const isOwner = currentUser && currentUser.userId === product.seller.id;
+                if (isOwner && postType !== 'SOLD' && product.availability !== t('pages.productDetails.unavailable')) {
+                  return (
+                    <>
+                      <button
+                        className="btn-contact-seller btn-edit-product"
+                        onClick={() => navigate(`/edit-product/${product.id}`)}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <span>{t('common.edit')}</span>
+                      </button>
+                      <button
+                        className="btn-contact-seller btn-mark-sold"
+                        onClick={() => setShowMarkSoldModal(true)}
+                      >
+                        <Check size={20} />
+                        <span>{t('markAsSold.button')}</span>
+                      </button>
+                    </>
+                  );
+                }
+                return null;
+              })()}
+
+              {(() => {
+                const currentUser = authService.getCurrentUser();
+                const isOwner = currentUser && currentUser.userId === product.seller.id;
+                return !isOwner;
+              })() && (
                 <button
                   className="btn-contact-seller"
                   onClick={async () => {
-                    // [ProductDetails] Contact seller clicked
-                    
                     if (!authService.isAuthenticated()) {
-                      // [ProductDetails] User not authenticated, redirecting to login
                       navigate('/login', {
                         state: { redirectTo: `/product/${product.id}` }
                       });
                       return;
                     }
-                    
                     try {
-                      // [ProductDetails] Starting conversation for product: product.id, product.name
-                      
+                      const conversations = await messagingService.getConversations(0, 100);
+                      const existingConversation = conversations?.content?.find(
+                        conv => conv.post?.id === product.id
+                      );
+                      if (existingConversation) {
+                        navigate(`/chat/${existingConversation.id}`);
+                        return;
+                      }
                       const initialMessage = t('chat.interestedInProduct', { productName: product.name }) || `Hi, I'm interested in ${product.name}`;
-                      // [ProductDetails] Initial message: initialMessage
-                      
                       const conversation = await messagingService.startConversation(
                         product.id,
                         initialMessage
                       );
-                      
-                      // [ProductDetails] Conversation response: conversation
-                      
                       if (!conversation || !conversation.id) {
                         throw new Error('Invalid conversation response');
                       }
-                      
                       navigate(`/chat/${conversation.id}`, {
-                        state: {
-                          initialMessage,
-                          justCreated: true
-                        }
+                        state: { initialMessage, justCreated: true }
                       });
                     } catch (error) {
-                      // [ProductDetails] Error starting conversation: {
-                      //   error,
-                      //   message: error.message,
-                      //   response: error.response,
-                      //   productId: product.id
-                      // }
-                      
-                      // Show more specific error messages
                       let errorMessage = t('chat.errorStartingConversation') || 'لا يمكن بدء المحادثة. يرجى المحاولة مرة أخرى';
-                      
                       if (error.message.includes('[400]')) {
                         if (error.message.includes('yourself')) {
                           errorMessage = t('chat.cannotMessageYourself');
@@ -518,51 +615,27 @@ const ProductDetailsPage = () => {
                       } else if (error.message.includes('[404]')) {
                         errorMessage = t('chat.productNotFound') || 'Product not found.';
                       }
-                      
-                      alert(errorMessage);
+                      showError({ messageAr: errorMessage, messageEn: errorMessage });
                     }
                   }}
                 >
                   <MessageCircle size={20} />
                   <span>{t('pages.productDetails.contactSeller')}</span>
                 </button>
-
-                <div className="secondary-actions">
-                  {/* <button
-                    className={`btn-icon ${isWishlisted ? 'active' : ''}`}
-                    onClick={() => setIsWishlisted(!isWishlisted)}
-                    aria-label={t('pages.productDetails.addToWishlist')}
-                  >
-                    <Heart size={20} />
-                  </button> */}
-                  <div className="share-wrapper">
-                    <button
-                      className="btn-icon"
-                      onClick={() => setShowShareMenu(!showShareMenu)}
-                      aria-label={t('pages.productDetails.share')}
-                    >
-                      <Share2 size={20} />
-                    </button>
-                    {showShareMenu && (
-                      <div className="share-menu">
-                        <button onClick={() => handleShare('whatsapp')}>WhatsApp</button>
-                        <button onClick={() => handleShare('facebook')}>Facebook</button>
-                         <button onClick={() => handleShare('copy')}>{t('pages.productDetails.copyLink')}</button>
-                     </div>
-                   )}
-                 </div>
-               </div>
-             </div>
-
-             {/* Copy Link Notification */}
-             {showCopyNotification && (
-               <div className="copy-notification">
-                 <Check size={20} />
-                 <span>{t('pages.productDetails.linkCopied')}</span>
-               </div>
-             )}
-
+              )}
             </div>
+            
+            </div>
+            {/* End Right Sidebar */}
+
+            {/* Copy Link Notification */}
+            {showCopyNotification && (
+              <div className="copy-notification">
+                <Check size={20} />
+                <span>{t('pages.productDetails.linkCopied')}</span>
+              </div>
+            )}
+
           </div>
 
 
@@ -586,7 +659,8 @@ const ProductDetailsPage = () => {
                   <div
                     key={item.id}
                     className="related-card modern-card"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    style={{ animationDelay: `${index * 0.1}s`, cursor: 'pointer' }}
+                    onClick={() => navigate(`/product/${item.id}`)}
                   >
                     <div className="card-glow-effect"></div>
                     
@@ -663,6 +737,72 @@ const ProductDetailsPage = () => {
 
         <Footer />
       </div>
+
+      {/* Mark as Sold Modal */}
+      {showMarkSoldModal && (
+        <MarkAsSoldModal
+          postId={product.id}
+          onClose={() => setShowMarkSoldModal(false)}
+          onSuccess={() => fetchProductDetails()}
+        />
+      )}
+
+      {/* Fullscreen Image Viewer */}
+      {fullscreenImage && (
+        <div className="fullscreen-overlay" onClick={() => setFullscreenImage(false)}>
+          <button
+            className="fullscreen-close"
+            onClick={() => setFullscreenImage(false)}
+            aria-label="Close fullscreen"
+          >
+            &times;
+          </button>
+
+          {product.images.length > 1 && (
+            <button
+              className="fullscreen-nav fullscreen-prev"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedImage((prev) => (prev - 1 + product.images.length) % product.images.length);
+              }}
+              aria-label="Previous image"
+            >
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
+          <div className="fullscreen-image-container" onClick={(e) => e.stopPropagation()}>
+            {product.images[selectedImage].startsWith('http') ? (
+              <img
+                src={product.images[selectedImage]}
+                alt={product.name}
+                className="fullscreen-img"
+              />
+            ) : (
+              <Gamepad2 size={200} className="fullscreen-placeholder-icon" />
+            )}
+          </div>
+
+          {product.images.length > 1 && (
+            <button
+              className="fullscreen-nav fullscreen-next"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedImage((prev) => (prev + 1) % product.images.length);
+              }}
+              aria-label="Next image"
+            >
+              <ChevronRight size={32} />
+            </button>
+          )}
+
+          {product.images.length > 1 && (
+            <div className="fullscreen-counter">
+              {selectedImage + 1} / {product.images.length}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

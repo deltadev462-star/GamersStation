@@ -1,115 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Gamepad2,
   Monitor,
   Headphones,
   LayoutGrid,
-  Sparkles,
-  Smartphone,
-  Glasses,
-  Disc3
 } from 'lucide-react';
+import categoryService from '../../services/categoryService';
 import './CategoryFilter.css';
 
+// Visual config per platform slug
+const PLATFORM_VISUALS = {
+  playstation: { icon: <Gamepad2 size={18} />, indicator: '#0050a0' },
+  xbox:        { icon: <Gamepad2 size={18} />, indicator: '#52b043' },
+  nintendo:    { icon: <Gamepad2 size={18} />, indicator: '#e4000f' },
+  pc:          { icon: <Monitor size={18} />,  indicator: '#ff6b35' },
+};
+
+// Emoji per subcategory slug keyword
+function getSubcategoryIcon(slug) {
+  if (slug.includes('device')) return '🖥️';
+  if (slug.includes('game'))   return '🎮';
+  if (slug.includes('accessor')) return '🎧';
+  return '📦';
+}
+
 const CategoryFilter = ({ onFilterChange }) => {
+  const { i18n } = useTranslation();
   const { t } = useTranslation();
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [selectedSubcategory, setSelectedSubcategory] = useState('all');
-  
-  // Icons for subcategories
-  const subcategoryIcons = {
-    devices: <Monitor size={16} />,
-    games: <Gamepad2 size={16} />,
-    accessories: <Headphones size={16} />,
-    controllers: <Gamepad2 size={16} />,
-    storage: <Disc3 size={16} />,
-    collectibles: <Sparkles size={16} />
-  };
+  const [categories, setCategories] = useState([]);
 
-  // Generic subcategories for "all" platform
-  const genericSubcategories = [
-    {
-      key: 'devices',
-      name: t('categoryFilter.devices'),
-      icon: subcategoryIcons.devices,
-      categoryIds: [100, 200, 300, 400, 500, 600, 700]
-    },
-    {
-      key: 'games',
-      name: t('categoryFilter.games'),
-      icon: subcategoryIcons.games,
-      categoryIds: [101, 201, 301, 401, 501, 601, 701]
-    },
-    {
-      key: 'accessories',
-      name: t('categoryFilter.accessories'),
-      icon: subcategoryIcons.accessories,
-      categoryIds: [102, 202, 302, 402, 502, 602, 702]
-    },
-   
-  ];
+  // Fetch categories from API on mount
+  useEffect(() => {
+    categoryService.getCategories()
+      .then(data => {
+        console.log('Categories from API:', data);
+        setCategories(data);
+      })
+      .catch(err => console.error('Failed to load categories:', err));
+  }, []);
 
-  // Platform configurations with icons
-  const platforms = [
-    {
-      name: t('categoryFilter.all'),
-      key: 'all',
-      icon: <LayoutGrid size={18} />,
-      gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
-      categoryId: null,
-      subcategories: genericSubcategories
-    },
-    {
-      name: t('categoryFilter.playstation'),
-      key: 'playstation',
-      icon: <Gamepad2 size={18} />,
-      gradient: 'linear-gradient(135deg, #003791, #00439c)',
-      categoryIds: [100, 101, 102],
-      subcategories: [
-        { key: 'devices', name: t('categoryFilter.console'), icon: subcategoryIcons.devices, categoryId: 100 },
-        { key: 'games', name: t('categoryFilter.games'), icon: subcategoryIcons.games, categoryId: 101 },
-        { key: 'accessories', name: t('categoryFilter.accessories'), icon: subcategoryIcons.accessories, categoryId: 102 }
-      ]
-    },
-    {
-      name: t('categoryFilter.xbox'),
-      key: 'xbox',
-      icon: <Gamepad2 size={18} />,
-      gradient: 'linear-gradient(135deg, #107c10, #0e7a0d)',
-      categoryIds: [200, 201, 202],
-      subcategories: [
-        { key: 'devices', name: t('categoryFilter.console'), icon: subcategoryIcons.devices, categoryId: 200 },
-        { key: 'games', name: t('categoryFilter.games'), icon: subcategoryIcons.games, categoryId: 201 },
-        { key: 'accessories', name: t('categoryFilter.accessories'), icon: subcategoryIcons.accessories, categoryId: 202 }
-      ]
-    },
-    {
-      name: t('categoryFilter.nintendo'),
-      key: 'nintendo',
-      icon: <Gamepad2 size={18} />,
-      gradient: 'linear-gradient(135deg, #e60012, #ff0000)',
-      categoryIds: [300, 301, 302],
-      subcategories: [
-        { key: 'devices', name: t('categoryFilter.console'), icon: subcategoryIcons.devices, categoryId: 300 },
-        { key: 'games', name: t('categoryFilter.games'), icon: subcategoryIcons.games, categoryId: 301 },
-        { key: 'accessories', name: t('categoryFilter.accessories'), icon: subcategoryIcons.accessories, categoryId: 302 }
-      ]
-    },
-    {
-      name: t('categoryFilter.pc'),
-      key: 'pc',
-      icon: <Monitor size={18} />,
-      gradient: 'linear-gradient(135deg, #ff6b35, #ff4757)',
-      categoryIds: [400, 401, 402],
-      subcategories: [
-        { key: 'devices', name: t('categoryFilter.devices'), icon: subcategoryIcons.devices, categoryId: 400 },
-        { key: 'games', name: t('categoryFilter.games'), icon: subcategoryIcons.games, categoryId: 401 },
-        { key: 'accessories', name: t('categoryFilter.accessories'), icon: subcategoryIcons.accessories, categoryId: 402 }
-      ]
-    },
-    
-  ];
+  const isArabic = i18n.language === 'ar';
+
+  // Build platforms from API data (level 1 = platforms, level 2 = subcategories)
+  const platforms = useMemo(() => {
+    const mainCats = categories.filter(c => c.level === 1).sort((a, b) => a.sortOrder - b.sortOrder);
+    const subCats = categories.filter(c => c.level === 2);
+
+    // Build "all" platform with cross-platform subcategory groups
+    const subcategoryGroups = {};
+    for (const sub of subCats) {
+      // Group by slug suffix (e.g. "devices", "games", "accessories")
+      const suffix = sub.slug.split('-').pop();
+      if (!subcategoryGroups[suffix]) subcategoryGroups[suffix] = { ids: [], name: isArabic ? sub.nameAr : sub.nameEn, slug: suffix };
+      subcategoryGroups[suffix].ids.push(sub.id);
+    }
+    const genericSubs = Object.values(subcategoryGroups).map(g => ({
+      key: g.slug,
+      name: g.name,
+      icon: getSubcategoryIcon(g.slug),
+      categoryIds: g.ids,
+    }));
+
+    // Build each platform entry
+    const platformEntries = mainCats.map(cat => {
+      const visuals = PLATFORM_VISUALS[cat.slug] || { icon: <Gamepad2 size={18} />, indicator: null };
+      const children = subCats.filter(s => s.parentId === cat.id).sort((a, b) => a.sortOrder - b.sortOrder);
+
+      return {
+        name: isArabic ? cat.nameAr : cat.nameEn,
+        key: cat.slug,
+        icon: visuals.icon,
+        indicator: visuals.indicator,
+        categoryIds: children.map(c => c.id),
+        subcategories: children.map(c => ({
+          key: c.slug,
+          name: isArabic ? c.nameAr : c.nameEn,
+          icon: getSubcategoryIcon(c.slug),
+          categoryId: c.id,
+        })),
+      };
+    });
+
+    return [
+      { name: t('categoryFilter.all'), key: 'all', icon: <LayoutGrid size={18} />, indicator: null, categoryId: null, subcategories: genericSubs },
+      ...platformEntries,
+    ];
+  }, [categories, isArabic, t]);
 
   const currentPlatform = platforms.find(p => p.key === selectedPlatform);
   const subcategories = currentPlatform?.subcategories || [];
@@ -152,15 +131,8 @@ const CategoryFilter = ({ onFilterChange }) => {
                   selectedPlatform === platform.key ? 'active' : ''
                 }`}
                 onClick={() => handlePlatformChange(platform)}
-                 
               >
-                <span className="pill-icon">{platform.icon}</span>
                 <span className="pill-text">{platform.name}</span>
-                {selectedPlatform === platform.key && (
-                  <span className="pill-indicator">
-                    <Sparkles size={14} />
-                  </span>
-                )}
               </button>
             ))}
           </div>
@@ -185,7 +157,7 @@ const CategoryFilter = ({ onFilterChange }) => {
                   }
                 }}
               >
-                <LayoutGrid size={14} />
+                <span className="pill-emoji">🏷️</span>
                 <span>{t('categoryFilter.all')}</span>
               </button>
               
@@ -197,7 +169,7 @@ const CategoryFilter = ({ onFilterChange }) => {
                   }`}
                   onClick={() => handleSubcategoryChange(subcategory)}
                 >
-                  {subcategory.icon}
+                  <span className="pill-emoji">{subcategory.icon}</span>
                   <span>{subcategory.name}</span>
                 </button>
               ))}

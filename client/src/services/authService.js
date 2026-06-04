@@ -1,6 +1,11 @@
 import { API_ENDPOINTS, apiRequest, buildApiUrl } from '../config/api';
 
 class AuthService {
+  constructor() {
+    // Singleton promise to prevent concurrent refresh calls
+    this._refreshPromise = null;
+  }
+
   // Store tokens in local storage
   setTokens(accessToken, refreshToken) {
     localStorage.setItem('accessToken', accessToken);
@@ -20,6 +25,11 @@ class AuthService {
     return userStr ? JSON.parse(userStr) : null;
   }
   
+  // Check if user has tokens stored (does NOT validate expiry)
+  hasTokens() {
+    return !!localStorage.getItem('refreshToken');
+  }
+
   // Check if user is authenticated
   isAuthenticated() {
     return !!localStorage.getItem('accessToken');
@@ -79,8 +89,24 @@ class AuthService {
     }
   }
   
-  // Refresh access token
+  // Refresh access token (single-flight: concurrent callers share one request)
   async refreshToken() {
+    // If a refresh is already in-flight, reuse the same promise.
+    // This prevents concurrent 401 retries from each firing a separate
+    // refresh request, which would trigger server-side token-reuse detection.
+    if (this._refreshPromise) {
+      return this._refreshPromise;
+    }
+
+    this._refreshPromise = this._doRefresh();
+    try {
+      return await this._refreshPromise;
+    } finally {
+      this._refreshPromise = null;
+    }
+  }
+
+  async _doRefresh() {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
       throw new Error('No refresh token available');
@@ -115,11 +141,24 @@ class AuthService {
     }
   }
   
-  // Logout
-  logout() {
-    this.clearTokens();
-    // Redirect to login page
-    window.location.href = '/login';
+  // Logout — revoke server-side session, then clear local state
+  async logout() {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        await fetch(buildApiUrl(API_ENDPOINTS.auth.logout), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${refreshToken}`,
+          },
+        });
+      }
+    } catch {
+      // Ignore errors — we're logging out regardless
+    } finally {
+      this.clearTokens();
+    }
   }
   
   // Format phone number to Saudi format
